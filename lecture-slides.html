@@ -1,0 +1,4308 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Agent Architecture — KISA 2026.05</title>
+
+        <!-- Google Fonts: Archivo (display, 800 weight) + Nunito (body) + JetBrains Mono (code) -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=Nunito:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        />
+        <style>
+/* =========================================================
+THEME — SWISS MODERN
+Bauhaus-inspired. White / black / red. Visible grid.
+========================================================= */
+:root {
+    --bg: #ffffff;
+    --text: #0a0a0a;
+    --secondary: #555555;
+    --tertiary: #888888;
+    --accent: #ff3300;
+    --accent-soft: rgba(255, 51, 0, 0.1);
+    --line: rgba(0, 0, 0, 0.06);
+    --rule: rgba(0, 0, 0, 0.15);
+
+    --font-display: "Archivo", sans-serif;
+    --font-body: "Nunito", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+
+    --title-size: clamp(1.5rem, 5vw, 4rem);
+    --hero-size: clamp(2.5rem, 8vw, 6.5rem);
+    --h2-size: clamp(1.5rem, 3.8vw, 2.8rem);
+    --h3-size: clamp(1rem, 2.2vw, 1.5rem);
+    --body-size: clamp(0.95rem, 1.5vw, 1.2rem);
+    --small-size: clamp(0.85rem, 1.2vw, 1.05rem);
+    --tiny-size: clamp(0.75rem, 1vw, 0.95rem);
+
+    --slide-padding: clamp(2rem, 5vw, 5rem);
+    --content-gap: clamp(0.75rem, 2vw, 2rem);
+    --element-gap: clamp(0.4rem, 1vw, 1rem);
+
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration: 0.6s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+VIEWPORT BASE — MANDATORY
+Every slide fits exactly in 100vh. No scrolling within.
+========================================================= */
+html,
+body {
+    height: 100%;
+    overflow-x: hidden;
+}
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+body {
+    font-family: var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    overflow-wrap: normal;
+}
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: var(--slide-padding);
+
+    /* Visible grid background (Swiss Modern signature) */
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: clamp(40px, 7vw, 80px) clamp(40px, 7vh, 80px);
+}
+
+/* =========================================================
+COMMON ELEMENTS
+========================================================= */
+.eyebrow {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--small-size);
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: clamp(0.5rem, 1vw, 1rem);
+}
+.eyebrow::before {
+    content: "";
+    width: clamp(20px, 3vw, 40px);
+    height: 2px;
+    background: var(--accent);
+}
+.slide-number {
+    position: absolute;
+    top: var(--slide-padding);
+    right: var(--slide-padding);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--tiny-size);
+    letter-spacing: 0.15em;
+    color: var(--tertiary);
+}
+.slide-footer {
+    position: absolute;
+    bottom: var(--slide-padding);
+    left: var(--slide-padding);
+    right: var(--slide-padding);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--tiny-size);
+    letter-spacing: 0.05em;
+    color: var(--tertiary);
+    padding-top: clamp(0.75rem, 1.5vh, 1rem);
+    border-top: 1px solid var(--rule);
+}
+.slide-footer .dot {
+    color: var(--accent);
+}
+
+/* =========================================================
+ANIMATIONS — entrance on .visible
+========================================================= */
+.reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition:
+        opacity var(--duration) var(--ease),
+        transform var(--duration) var(--ease);
+}
+.slide.visible .reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+.slide.visible .reveal:nth-child(1) {
+    transition-delay: 0.1s;
+}
+.slide.visible .reveal:nth-child(2) {
+    transition-delay: 0.2s;
+}
+.slide.visible .reveal:nth-child(3) {
+    transition-delay: 0.3s;
+}
+.slide.visible .reveal:nth-child(4) {
+    transition-delay: 0.4s;
+}
+.slide.visible .reveal:nth-child(5) {
+    transition-delay: 0.5s;
+}
+.slide.visible .reveal:nth-child(6) {
+    transition-delay: 0.6s;
+}
+
+/* =========================================================
+TITLE SLIDE — opening + day intros
+========================================================= */
+.title-slide h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--hero-size);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-top: auto;
+}
+.title-slide h1 em {
+    font-style: normal;
+    color: var(--accent);
+}
+.title-slide .lead {
+    font-size: clamp(1rem, 1.8vw, 1.4rem);
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 55ch;
+    color: rgba(0, 0, 0, 0.7);
+    margin-top: clamp(1rem, 2vh, 2rem);
+}
+.title-slide .meta-row {
+    display: flex;
+    gap: clamp(2rem, 4vw, 4rem);
+    margin-top: auto;
+}
+.title-slide .meta-row > div span:first-child {
+    color: var(--tertiary);
+    margin-right: 0.5rem;
+}
+.title-slide .geo {
+    position: absolute;
+    top: 12%;
+    right: 10%;
+    width: clamp(80px, 12vw, 160px);
+    height: clamp(80px, 12vw, 160px);
+    border: 2px solid var(--accent);
+}
+.title-slide .dot-shape {
+    position: absolute;
+    top: 14%;
+    right: 8%;
+    width: clamp(12px, 1.5vw, 18px);
+    height: clamp(12px, 1.5vw, 18px);
+    background: var(--accent);
+    border-radius: 50%;
+}
+
+/* =========================================================
+SECTION DIVIDER — big number + heading
+========================================================= */
+.section-divider {
+    justify-content: center;
+}
+.section-divider .num {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(8rem, 28vw, 22rem);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    color: var(--text);
+    margin-bottom: clamp(0.5rem, 1vh, 1rem);
+}
+.section-divider .num em {
+    font-style: normal;
+    color: var(--accent);
+}
+.section-divider .section-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    max-width: 18ch;
+}
+.section-divider .section-sub {
+    font-size: var(--body-size);
+    color: var(--secondary);
+    margin-top: clamp(0.5rem, 1.5vh, 1.2rem);
+    max-width: 50ch;
+    line-height: 1.55;
+}
+
+/* =========================================================
+CONTENT SLIDE — heading + bullets
+========================================================= */
+.content-slide .slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 70ch;
+}
+.content-slide h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--h2-size);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin-top: clamp(0.5rem, 1.5vh, 1.2rem);
+}
+.content-slide h2 em {
+    font-style: normal;
+    color: var(--accent);
+}
+.content-slide .bullets {
+    list-style: none;
+    margin-top: clamp(1rem, 2.5vh, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1.4vh, 1rem);
+}
+.content-slide .bullets li {
+    font-size: var(--body-size);
+    line-height: 1.55;
+    position: relative;
+    padding-left: clamp(1.2rem, 2vw, 1.8rem);
+}
+.content-slide .bullets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: clamp(0.6em, 1vh, 0.7em);
+    width: clamp(8px, 0.8vw, 12px);
+    height: 2px;
+    background: var(--accent);
+}
+.content-slide .bullets li strong {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--text);
+}
+.content-slide .bullets.dense li {
+    font-size: var(--small-size);
+}
+
+/* =========================================================
+TWO-COLUMN — for split content
+========================================================= */
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 4rem);
+    margin-top: clamp(1rem, 2.5vh, 2rem);
+}
+.two-col h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--h3-size);
+    margin-bottom: clamp(0.5rem, 1vh, 0.8rem);
+    color: var(--accent);
+}
+.two-col p,
+.two-col ul {
+    font-size: var(--body-size);
+    line-height: 1.5;
+}
+.two-col ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.8vh, 0.6rem);
+}
+.two-col ul li {
+    padding-left: clamp(0.8rem, 1.5vw, 1.2rem);
+    position: relative;
+}
+.two-col ul li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 2px;
+    background: var(--text);
+}
+@media (max-width: 700px) {
+    .two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+TAKEAWAY SLIDE — accent-card
+========================================================= */
+.takeaway-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: left;
+}
+.takeaway-card {
+    background: var(--accent);
+    color: var(--bg);
+    padding: clamp(2rem, 5vw, 4rem);
+    max-width: min(85vw, 900px);
+    width: 100%;
+    position: relative;
+}
+.takeaway-card .takeaway-label {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--small-size);
+    letter-spacing: 0.06em;
+    margin-bottom: clamp(0.8rem, 2vh, 1.5rem);
+    opacity: 0.85;
+}
+.takeaway-card .takeaway-text {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.5rem, 4.5vw, 3.2rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.takeaway-card .takeaway-note {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--body-size);
+    line-height: 1.55;
+    margin-top: clamp(0.8rem, 2vh, 1.5rem);
+    max-width: 55ch;
+    opacity: 0.95;
+}
+
+/* =========================================================
+QUOTE SLIDE
+========================================================= */
+.quote-slide {
+    justify-content: center;
+}
+.quote-slide blockquote {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    max-width: 24ch;
+    position: relative;
+    padding-left: clamp(1.5rem, 3vw, 2.5rem);
+    border-left: 4px solid var(--accent);
+}
+.quote-slide cite {
+    display: block;
+    font-family: var(--font-body);
+    font-style: normal;
+    font-weight: 600;
+    font-size: var(--small-size);
+    letter-spacing: 0.04em;
+    color: var(--secondary);
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+}
+
+/* =========================================================
+CODE SLIDE
+========================================================= */
+.code-slide pre {
+    background: #0a0a0a;
+    color: #f4f4f4;
+    padding: clamp(1rem, 2.5vw, 2rem);
+    font-family: var(--font-mono);
+    font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+    line-height: 1.6;
+    overflow: hidden;
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    max-height: 65vh;
+    border-left: 4px solid var(--accent);
+}
+.code-slide pre .kw {
+    color: #ff5252;
+    font-weight: 500;
+}
+.code-slide pre .str {
+    color: #c0e676;
+}
+.code-slide pre .com {
+    color: #888;
+    font-style: italic;
+}
+.code-slide pre .fn {
+    color: #82b1ff;
+}
+.code-slide pre.code-medium {
+    font-size: clamp(0.6rem, 0.92vw, 0.82rem);
+    line-height: 1.45;
+    max-height: 80vh;
+}
+
+/* =========================================================
+TABLE / CODE / PRACTICE — vertical centering
+These slide types don't use .slide-content wrapper, so they
+need explicit centering on the slide itself.
+========================================================= */
+.table-slide,
+.code-slide,
+.practice-slide {
+    justify-content: center;
+}
+
+/* =========================================================
+TABLE SLIDE
+========================================================= */
+.table-slide table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    font-size: var(--small-size);
+}
+.table-slide th,
+.table-slide td {
+    padding: clamp(0.6rem, 1.2vh, 1rem) clamp(0.5rem, 1.2vw, 1rem);
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+}
+.table-slide th {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--tiny-size);
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent);
+}
+.table-slide td strong {
+    font-family: var(--font-display);
+    font-weight: 700;
+}
+.table-slide td.num-col {
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--accent);
+    width: clamp(2.5rem, 5vw, 4rem);
+}
+
+/* =========================================================
+DIAGRAM SLIDE — layer stack visualization
+========================================================= */
+.layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.4rem, 0.8vh, 0.6rem);
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    max-width: 72ch;
+}
+.layer-stack .layer {
+    display: flex;
+    align-items: center;
+    padding: clamp(0.7rem, 1.5vh, 1.1rem) clamp(1rem, 2vw, 1.5rem);
+    border: 1px solid var(--text);
+    background: var(--bg);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--body-size);
+    position: relative;
+    transition: transform 0.3s var(--ease);
+}
+.layer-stack .layer .layer-num {
+    font-size: var(--tiny-size);
+    color: var(--accent);
+    margin-right: clamp(0.8rem, 1.5vw, 1.2rem);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+.layer-stack .layer .layer-tag {
+    margin-left: auto;
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--small-size);
+    color: var(--secondary);
+}
+.layer-stack .layer.highlight {
+    border-color: var(--accent);
+    border-width: 2px;
+    background: var(--accent-soft);
+}
+
+/* =========================================================
+COMPONENT GRID — 부품 카탈로그 (순서 X, 요소만)
+========================================================= */
+.component-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(0.7rem, 1.4vh, 1.1rem);
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+}
+.component-grid .component {
+    border: 1.5px solid var(--text);
+    padding: clamp(0.9rem, 1.7vh, 1.3rem) clamp(1rem, 2vw, 1.4rem);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.25rem, 0.6vh, 0.45rem);
+}
+.component-grid .component.span-2 {
+    grid-column: 1 / -1;
+}
+.component-grid .component-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1rem, 1.7vw, 1.35rem);
+    color: var(--accent);
+    letter-spacing: -0.005em;
+}
+.component-grid .component-desc {
+    font-size: var(--body-size);
+    line-height: 1.4;
+    color: var(--text);
+}
+.component-grid .component-tag {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--secondary);
+}
+
+/* =========================================================
+FLOW LOOP — 가로 sequence + cycle arc (반복 시각화)
+========================================================= */
+.flow-loop {
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    margin-bottom: clamp(1rem, 2vh, 1.5rem);
+}
+.flow-loop .flow-row {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(0.4rem, 0.8vw, 0.7rem);
+}
+.flow-loop .flow-step {
+    flex: 1;
+    border: 2px solid var(--text);
+    padding: clamp(1rem, 2vh, 1.4rem) clamp(0.7rem, 1.3vw, 1.1rem);
+    text-align: center;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.6vh, 0.5rem);
+    min-width: 0;
+}
+.flow-loop .flow-step.flow-step-loop {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+}
+.flow-loop .flow-step-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1rem, 1.8vw, 1.4rem);
+    letter-spacing: -0.005em;
+}
+.flow-loop .flow-step-tag {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--secondary);
+}
+.flow-loop .flow-step.flow-step-loop .flow-step-tag {
+    color: var(--bg);
+    opacity: 0.85;
+}
+.flow-loop .flow-arrow {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+    color: var(--accent);
+}
+.flow-loop .flow-arc-wrap {
+    position: relative;
+    margin-top: clamp(0.5rem, 1vh, 0.8rem);
+}
+.flow-loop .flow-arc {
+    display: block;
+    width: 100%;
+    height: clamp(1.4rem, 2.8vh, 2.4rem);
+    color: var(--text);
+}
+.flow-loop .flow-arc-tip {
+    position: absolute;
+    left: 12%;
+    top: -1px;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 9px solid currentColor;
+    color: var(--text);
+}
+.flow-loop-label {
+    text-align: center;
+    margin-top: clamp(0.6rem, 1.2vh, 1rem);
+    font-size: var(--small-size);
+    color: var(--secondary);
+    font-family: var(--font-body);
+}
+
+/* =========================================================
+AI TAXONOMY — concentric nested boxes (Russian dolls)
+포함 관계를 기하학적 중첩으로 표현. 트리 라인 없음.
+========================================================= */
+/* Wide slide-content modifier — for slides with horizontal-heavy diagrams */
+.slide-content.slide-content-wide {
+    max-width: none;
+    width: 100%;
+}
+
+.ai-taxonomy {
+    margin-top: clamp(0.9rem, 1.8vh, 1.6rem);
+    width: 100%;
+    max-width: 100%;
+}
+
+.nest-box {
+    border: 2px solid var(--text);
+    padding: clamp(0.7rem, 1.6vh, 1.3rem) clamp(1rem, 2.2vw, 1.7rem);
+    position: relative;
+    background: var(--bg);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+}
+
+.nest-box .nest-box {
+    margin-top: clamp(0.55rem, 1.2vh, 0.9rem);
+    box-shadow: 0 3px 18px rgba(0, 0, 0, 0.08);
+}
+
+.nest-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: clamp(0.35rem, 0.7vw, 0.6rem);
+    margin-bottom: clamp(0.2rem, 0.4vh, 0.35rem);
+}
+
+.nest-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(0.95rem, 1.7vw, 1.35rem);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+}
+
+.nest-subtitle {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--small-size);
+    color: var(--secondary);
+}
+
+/* Sibling chips — single-line full-width siblings at each level */
+.nest-siblings {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vh, 0.55rem);
+    margin: clamp(0.4rem, 0.8vh, 0.7rem) 0
+        clamp(0.55rem, 1.1vh, 0.9rem) 0;
+}
+
+.sib-chip {
+    width: 100%;
+    padding: clamp(0.5rem, 1.1vh, 0.85rem)
+        clamp(0.95rem, 1.9vw, 1.4rem);
+    border: 1.5px dashed var(--text);
+    background: transparent;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: clamp(0.4rem, 0.8vw, 0.7rem);
+    opacity: 0.7;
+}
+
+.sib-chip-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(0.95rem, 1.55vw, 1.18rem);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+}
+
+.sib-chip-meta {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--small-size);
+    color: var(--secondary);
+    line-height: 1.3;
+}
+
+.sib-chip-meta::before {
+    content: "— ";
+    margin-right: 0.1em;
+}
+
+/* Active chip — focal sibling (e.g., LLM) red filled */
+.sib-chip.sib-chip-active {
+    background: var(--accent);
+    border: 1.5px solid var(--accent);
+    color: var(--bg);
+    opacity: 1;
+    box-shadow: 0 3px 14px rgba(255, 51, 0, 0.18);
+}
+
+.sib-chip.sib-chip-active .sib-chip-meta {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* =========================================================
+TAXONOMY — short-viewport responsive scaling
+========================================================= */
+@media (max-height: 850px) {
+    .nest-box {
+        padding: clamp(0.55rem, 1.3vh, 1rem)
+            clamp(0.9rem, 1.9vw, 1.4rem);
+        box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+    }
+    .nest-box .nest-box {
+        margin-top: clamp(0.4rem, 0.9vh, 0.7rem);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    }
+    .sib-chip {
+        padding: clamp(0.4rem, 0.85vh, 0.65rem)
+            clamp(0.85rem, 1.7vw, 1.2rem);
+    }
+    .nest-siblings {
+        gap: clamp(0.25rem, 0.55vh, 0.4rem);
+        margin: clamp(0.35rem, 0.7vh, 0.55rem) 0
+            clamp(0.45rem, 0.9vh, 0.7rem) 0;
+    }
+    .nest-title {
+        font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+    }
+    .sib-chip-name {
+        font-size: clamp(0.88rem, 1.4vw, 1.1rem);
+    }
+}
+
+@media (max-height: 720px) {
+    .nest-box {
+        padding: clamp(0.45rem, 1vh, 0.8rem)
+            clamp(0.8rem, 1.7vw, 1.2rem);
+    }
+    .nest-box .nest-box {
+        margin-top: clamp(0.32rem, 0.7vh, 0.55rem);
+    }
+    .sib-chip {
+        padding: clamp(0.32rem, 0.7vh, 0.52rem)
+            clamp(0.75rem, 1.5vw, 1.05rem);
+    }
+    .nest-siblings {
+        gap: clamp(0.2rem, 0.45vh, 0.32rem);
+        margin: clamp(0.28rem, 0.55vh, 0.45rem) 0
+            clamp(0.35rem, 0.7vh, 0.55rem) 0;
+    }
+    .nest-title {
+        font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+    }
+    .nest-subtitle {
+        font-size: var(--tiny-size);
+    }
+    .sib-chip-name {
+        font-size: clamp(0.82rem, 1.3vw, 1rem);
+    }
+    .sib-chip-meta {
+        font-size: var(--tiny-size);
+    }
+}
+
+/* Outer AI box — Swiss Modern corner mark */
+.nest-box.nest-ai::before {
+    content: "";
+    position: absolute;
+    top: -1.5px;
+    left: -1.5px;
+    width: clamp(2.5rem, 5vw, 4rem);
+    height: 6px;
+    background: var(--text);
+}
+
+/* DL — emphasized with red bottom border */
+.nest-box.nest-dl {
+    border-bottom: 3px solid var(--accent);
+}
+
+/* =========================================================
+SLIDE FOOTNOTE — citation at bottom, separated from slide-footer
+========================================================= */
+.slide-footnote {
+    font-family: var(--font-body);
+    font-size: var(--tiny-size);
+    color: var(--secondary);
+    line-height: 1.6;
+    padding-top: clamp(0.65rem, 1.3vh, 1rem);
+    border-top: 1px solid var(--rule);
+    margin: 0 0 clamp(2.5rem, 5vh, 3.5rem) 0;
+    max-width: 100ch;
+}
+.slide-footnote strong {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+}
+.slide-footnote em {
+    font-style: italic;
+}
+
+/* =========================================================
+PRACTICE SLIDE
+========================================================= */
+.practice-slide h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--h2-size);
+    margin-top: clamp(0.5rem, 1vh, 1rem);
+}
+.practice-slide h2 em {
+    font-style: normal;
+    color: var(--accent);
+}
+.practice-slide .practice-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: clamp(0.4rem, 1vh, 0.8rem) clamp(1rem, 2.5vw, 2rem);
+    margin-top: clamp(1.5rem, 3vh, 2.5rem);
+    align-items: baseline;
+}
+.practice-slide .step-num {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--small-size);
+    color: var(--accent);
+    letter-spacing: 0.1em;
+}
+.practice-slide .step-text {
+    font-size: var(--body-size);
+    line-height: 1.5;
+}
+.practice-slide .step-time {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--tiny-size);
+    color: var(--secondary);
+    letter-spacing: 0.1em;
+}
+
+/* =========================================================
+PROGRESS BAR
+========================================================= */
+.progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    width: 0;
+    z-index: 1000;
+    transition: width 0.2s ease;
+}
+
+/* =========================================================
+INLINE EDITING — opt-in (user chose Yes)
+========================================================= */
+.edit-hotzone {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 80px;
+    z-index: 10000;
+    cursor: pointer;
+}
+.edit-toggle {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 10001;
+    width: 44px;
+    height: 44px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.3s ease,
+        background 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.edit-toggle.show,
+.edit-toggle.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.edit-toggle.active {
+    background: var(--accent);
+}
+.edit-banner {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    z-index: 10001;
+    background: var(--text);
+    color: var(--bg);
+    padding: 8px 14px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.edit-banner.active {
+    opacity: 1;
+}
+body.edit-active [contenteditable="true"] {
+    outline: 1px dashed var(--accent);
+    outline-offset: 2px;
+}
+body.edit-active [contenteditable="true"]:focus {
+    outline: 2px solid var(--accent);
+    background: var(--accent-soft);
+}
+
+/* =========================================================
+RESPONSIVE BREAKPOINTS — short viewports
+========================================================= */
+@media (max-height: 700px) {
+    :root {
+        --slide-padding: clamp(1rem, 3vw, 2.5rem);
+        --hero-size: clamp(1.8rem, 6vw, 3.5rem);
+        --h2-size: clamp(1.2rem, 3vw, 2rem);
+    }
+    .section-divider .num {
+        font-size: clamp(6rem, 22vw, 14rem);
+    }
+}
+@media (max-height: 600px) {
+    :root {
+        --slide-padding: clamp(0.75rem, 2.5vw, 1.5rem);
+        --hero-size: clamp(1.5rem, 5vw, 2.5rem);
+    }
+    .slide-footer {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+/* =========================================================
+EXTRACTED PRESENTATION UTILITIES
+Styles that used to live as inline style attributes in slide markup.
+========================================================= */
+.layer-num-w-45 { min-width: 4.5em; }
+.layer-num-w-50 { min-width: 5em; }
+.layer-num-w-55 { min-width: 5.5em; }
+
+.formula-line {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.4rem, 3vw, 2.4rem);
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+}
+.formula-line.formula-secondary {
+    font-size: clamp(1.05rem, 2.1vw, 1.6rem);
+    font-weight: 700;
+    margin-top: clamp(0.4rem, 1vh, 0.7rem);
+    color: var(--secondary);
+}
+.formula-line .formula-aside {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: clamp(0.8rem, 1.1vw, 1rem);
+    color: var(--secondary);
+    margin-left: clamp(0.4rem, 1vw, 0.8rem);
+    letter-spacing: 0;
+}
+
+.copy-note {
+    font-size: var(--body-size);
+    line-height: 1.6;
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    max-width: 60ch;
+    color: var(--secondary);
+}
+
+.support-note {
+    margin-top: clamp(1rem, 2vh, 1.5rem);
+    font-size: var(--small-size);
+    color: var(--secondary);
+    line-height: 1.55;
+}
+
+.problem-recap {
+    margin-top: clamp(0.4rem, 1vh, 0.7rem);
+    margin-bottom: clamp(0.4rem, 1vh, 0.7rem);
+    font-family: var(--font-body);
+    font-size: var(--small-size);
+    color: var(--secondary);
+    line-height: 1.4;
+    font-weight: 500;
+    border-left: 2px solid var(--rule);
+    padding-left: clamp(0.6rem, 1.2vw, 0.9rem);
+}
+
+.practice-intro {
+    font-size: var(--body-size);
+    margin-top: clamp(0.8rem, 2vh, 1.5rem);
+    max-width: 60ch;
+    color: var(--secondary);
+    line-height: 1.6;
+}
+
+.table-caption-note {
+    margin-top: clamp(0.8rem, 1.5vh, 1.2rem);
+    font-size: var(--small-size);
+    color: var(--secondary);
+}
+
+.code-slide-heading {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--h2-size);
+    margin-top: clamp(0.5rem, 1.5vh, 1rem);
+    letter-spacing: -0.015em;
+}
+
+.table-slide-heading {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--h2-size);
+    letter-spacing: -0.015em;
+}
+
+.outline-takeaway-card {
+    background: var(--bg);
+    color: var(--text);
+    border: 4px solid var(--accent);
+}
+
+.bullet-indent { padding-left: clamp(2rem, 4vw, 3rem); }
+.eyebrow-spaced { margin-bottom: clamp(0.5rem, 1.5vh, 1.2rem); }
+.mono-text { font-family: var(--font-mono); }
+.code-token {
+    font-family: var(--font-mono);
+    background: var(--accent-soft);
+    padding: 2px 6px;
+}
+.accent-em {
+    color: var(--accent);
+    font-style: normal;
+}
+.plain-em { font-style: normal; }
+.text-accent { color: var(--accent); }
+.text-primary { color: var(--text); }
+.text-secondary { color: var(--secondary); }
+
+/* =========================================================
+DECK WRAPPER
+========================================================= */
+.slide-deck {
+    min-height: 100vh;
+}
+
+/* =========================================================
+LLM EXPLAINER — attention viz + token probability viz
+(slides 07 입력 이해 / 08 출력 생성)
+========================================================= */
+.attn-viz,
+.gen-viz {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.6rem, 1.4vh, 1rem);
+    padding: clamp(0.8rem, 2vh, 1.2rem);
+    border-left: 2px solid var(--accent);
+    background: rgba(0, 0, 0, 0.02);
+}
+.attn-sentence {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--body-size);
+    line-height: 1.7;
+}
+.attn-source {
+    border-bottom: 2px dashed currentColor;
+    font-weight: 700;
+    padding: 0 2px;
+}
+.attn-target {
+    background: var(--accent);
+    color: #fff;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-weight: 700;
+}
+.attn-arrow {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--accent);
+    font-weight: 600;
+}
+.attn-caption {
+    font-size: var(--small-size);
+    color: #555;
+    line-height: 1.4;
+}
+
+.gen-prompt {
+    font-family: var(--font-mono);
+    font-size: var(--body-size);
+    font-weight: 500;
+}
+.gen-cands {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vh, 0.5rem);
+    margin: 0;
+    padding: 0;
+}
+.gen-cands li {
+    display: grid;
+    grid-template-columns: 4.5em 1fr 3em;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0;
+}
+.gen-cands li::before {
+    display: none;
+}
+.cand-token {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    font-weight: 600;
+}
+.cand-bar {
+    position: relative;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.07);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cand-bar > span {
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    border-radius: 4px;
+}
+.cand-prob {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text);
+    text-align: right;
+}
+.gen-loop {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--accent);
+    font-weight: 600;
+    padding-top: clamp(0.3rem, 0.8vh, 0.5rem);
+    border-top: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+/* token definition callout (slide 06 LLM breakdown) */
+.token-callout {
+    margin-top: clamp(0.8rem, 1.8vh, 1.4rem);
+    padding: clamp(0.6rem, 1.4vh, 0.9rem) clamp(0.8rem, 2vw, 1.2rem);
+    border-left: 2px solid var(--accent);
+    background: rgba(0, 0, 0, 0.02);
+    font-size: var(--small-size);
+    line-height: 1.55;
+    color: #444;
+}
+.token-callout-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    font-weight: 700;
+    padding: 0.1em 0.55em;
+    border-radius: 3px;
+    margin-right: 0.5em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+        </style>
+    </head>
+    <body>
+        <!-- Progress bar -->
+        <div class="progress-bar"></div>
+
+        <!-- Inline editing controls -->
+        <div class="edit-hotzone" title="Edit mode (E)"></div>
+        <button
+            class="edit-toggle"
+            id="editToggle"
+            title="Edit mode (E)"
+            aria-label="Toggle edit mode"
+        >
+            ✎
+        </button>
+        <div class="edit-banner" id="editBanner">
+            Edit Mode · Click text to edit · Ctrl+S to save
+        </div>
+
+        <main id="slideDeck" class="slide-deck">
+<!-- ========================================================= -->
+<!-- SLIDE 1 — Title -->
+<!-- ========================================================= -->
+<section class="slide title-slide">
+    <div class="geo"></div>
+    <div class="dot-shape"></div>
+    <div class="slide-number">01 / 96</div>
+    <div class="eyebrow reveal">Lecture · KISA · 2026.05</div>
+    <h1 class="reveal">AI Agent<br />Architecture<em>.</em></h1>
+    <p class="lead reveal">
+        프로덕션 시스템의 layer 지도 — 단일 에이전트의 구성에서 다층 보안
+        가드레일까지.
+    </p>
+    <div class="meta-row reveal">
+        <div><span>대상</span>백엔드 직군 취준생</div>
+        <div><span>형식</span>4시간 × 2일</div>
+        <div><span>시점</span>2026년 5월</div>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- SLIDE 2 — Roadmap (Day 1 / Day 2) -->
+<!-- ========================================================= -->
+<section class="slide content-slide">
+    <div class="slide-number">02 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">Roadmap</div>
+        <h2 class="reveal">두 날의 <em>여정</em></h2>
+        <div class="two-col reveal">
+            <div>
+                <h3>Day 1 — 만들고 검증</h3>
+                <ul>
+                    <li>AI / AI Agent?</li>
+                    <li>에이전트의 기본 구성</li>
+                    <li>Observability</li>
+                    <li>Evaluation</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Day 2 — 키우고 지키기</h3>
+                <ul>
+                    <li>Multi-Agent</li>
+                    <li>Workflow Orchestration</li>
+                    <li>Cost Structure</li>
+                    <li>Guardrails</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Roadmap</span><span class="dot">●</span
+        ><span>AI Agent Architecture</span>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- SLIDE 3 — Goals -->
+<!-- ========================================================= -->
+<section class="slide content-slide">
+    <div class="slide-number">03 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">학습 목표</div>
+        <h2 class="reveal">강의가 끝날 때 <em>가지고 갈 것</em></h2>
+        <ul class="bullets reveal">
+            <li>
+                AI 에이전트 시스템의 <strong>전체 layer 지도</strong>를 머리속에
+                그릴 수 있다
+            </li>
+            <li>
+                production에서 마주치는
+                <strong>주요 문제와 해법 패턴</strong>을 안다
+            </li>
+            <li>
+                새 시스템에서 <strong>어떻게 구축할지</strong> 스스로 판단할 수
+                있다
+            </li>
+            <li>
+                실습으로 <strong>구축 → 평가 → 분산</strong> 사이클을 손으로
+                경험한다
+            </li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Goals</span><span class="dot">●</span
+        ><span>AI Agent Architecture</span>
+    </div>
+</section>
+<!-- ========================================================= -->
+<!-- SECTION 1 — AI / LLM / Agent의 구분 -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+    <div class="slide-number">04 / 96</div>
+    <div class="num reveal">0<em>1</em></div>
+    <div class="section-name reveal">AI / AI Agent의 구분</div>
+    <div class="section-sub reveal">
+        정의의 안개를 걷어낸다 — AI는 어떻게 AI Agent로 이어지는가.
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Definitions</span>
+    </div>
+</section>
+
+<!-- 용어 변천 -->
+<section class="slide content-slide">
+    <div class="slide-number">05 / 96</div>
+    <div class="slide-content slide-content-wide">
+        <div class="eyebrow reveal">용어의 통용</div>
+        <h2 class="reveal">AI는 원래 넓은 말, <em>요즘은 LLM 중심</em></h2>
+        <div class="ai-taxonomy reveal">
+            <div class="nest-box nest-ai">
+                <header class="nest-head">
+                    <span class="nest-title">AI</span>
+                    <span class="nest-subtitle">— 인공지능 (광의)</span>
+                </header>
+
+                <div class="nest-siblings">
+                    <div class="sib-chip">
+                        <span class="sib-chip-name">그 외</span>
+                        <span class="sib-chip-meta"
+                            >탐색 · 최적화 · 로보틱스 · 음성 · 비전 ·
+                            강화학습</span
+                        >
+                    </div>
+                </div>
+
+                <div class="nest-box nest-ml">
+                    <header class="nest-head">
+                        <span class="nest-title">Machine Learning</span>
+                        <span class="nest-subtitle">— 데이터 기반 학습</span>
+                    </header>
+
+                    <div class="nest-siblings">
+                        <div class="sib-chip">
+                            <span class="sib-chip-name">전통적 ML</span>
+                            <span class="sib-chip-meta"
+                                >Bayesian · Analogy(SVM, kNN) · 결정
+                                트리·회귀</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="nest-box nest-dl">
+                        <header class="nest-head">
+                            <span class="nest-title">Deep Learning</span>
+                            <span class="nest-subtitle"
+                                >— 신경망 (Connectionist)</span
+                            >
+                        </header>
+
+                        <div class="nest-siblings">
+                            <div class="sib-chip">
+                                <span class="sib-chip-name"
+                                    >CNN · RNN/LSTM</span
+                                >
+                                <span class="sib-chip-meta">비전 · 시퀀스</span>
+                            </div>
+                            <div class="sib-chip">
+                                <span class="sib-chip-name"
+                                    >GAN · Diffusion</span
+                                >
+                                <span class="sib-chip-meta">생성 모델</span>
+                            </div>
+                            <div class="sib-chip sib-chip-active">
+                                <span class="sib-chip-name">LLM ★</span>
+                                <span class="sib-chip-meta"
+                                    >Transformer 기반 · 이 강의의 주제</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footnote reveal">
+        <strong>분류 출처</strong> Russell &amp; Norvig,
+        <em>AI: A Modern Approach</em> (4th ed., 2020) &nbsp;·&nbsp;
+        <strong>"통용은 LLM"</strong> Stanford AI Index Report (2025) — 산업
+        투자·연구가 LLM/Generative AI에 집중 &nbsp;·&nbsp; 이 강의에선
+        <strong>AI ≈ LLM</strong>, <strong>AI Agent ≈ LLM Agent</strong>로 가정
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Terminology</span>
+    </div>
+</section>
+
+<!-- LLM 분해 — Large + Language + Model -->
+<section class="slide content-slide">
+    <div class="slide-number">06 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">Large Language Model</div>
+        <h2 class="reveal">LLM, 글자 그대로 <em>풀어보면</em></h2>
+        <ul class="bullets reveal">
+            <li>
+                <strong>L</strong>arge — 모델 파라미터 수십억~수천억 개 ·
+                학습 데이터는 수조 토큰 규모
+            </li>
+            <li>
+                <strong>L</strong>anguage — 자연어 (사람이 쓰는 일상 언어).
+                기계어(Python·Java·assembly 같은 프로그래밍 언어)와 구분되는, 사람의 글
+            </li>
+            <li>
+                <strong>M</strong>odel — 입력→출력 함수. 그 함수의 구조가
+                <strong>Transformer</strong> 아키텍처
+            </li>
+        </ul>
+        <div class="token-callout reveal">
+            <span class="token-callout-tag">토큰</span>
+            단어를 잘게 쪼갠 단위 — 예: "안녕하세요" → "안녕", "하세요".
+            자주 등장하는 패턴은 한 토큰, 드문 단어·표현은 여러 토큰으로
+            쪼개진다 (정확한 분할은 모델·토크나이저마다 다름).
+            LLM은 입출력을 모두 토큰 단위로 처리한다.
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>What is LLM</span>
+    </div>
+</section>
+
+<!-- LLM 입력 이해 — 토큰 간 관계 -->
+<section class="slide content-slide">
+    <div class="slide-number">07 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">입력 이해</div>
+        <h2 class="reveal">
+            모든 토큰이 <em>서로를 참조</em>해 의미를 잡는다
+        </h2>
+        <div class="two-col reveal">
+            <ul>
+                <li>
+                    각 토큰이 입력의 <strong>다른 모든 토큰</strong>과의 관계를 본다
+                </li>
+                <li>
+                    가까운 단어뿐 아니라 <strong>멀리 있는 단어</strong>와의
+                    의존도 직접 처리
+                </li>
+                <li>그래서 긴 문맥의 대명사·맥락도 정확히 잡힌다</li>
+            </ul>
+            <div class="attn-viz">
+                <div class="attn-sentence">
+                    <span class="attn-source">고양이</span>가 의자에서
+                    떨어졌다. <span class="attn-target">그것</span>이 다쳤다.
+                </div>
+                <div class="attn-arrow">"그것" ↤ "고양이"</div>
+                <div class="attn-caption">
+                    원거리에 있는 토큰끼리도 직접 연결된다
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Input · Attention</span>
+    </div>
+</section>
+
+<!-- LLM 출력 생성 — 확률 분포 + 토큰 단위 반복 -->
+<section class="slide content-slide">
+    <div class="slide-number">08 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">출력 생성</div>
+        <h2 class="reveal">
+            확률 분포에서 <em>골라 → 추가 → 반복</em>
+        </h2>
+        <div class="two-col reveal">
+            <ul>
+                <li>
+                    매 단계마다 다음 토큰의 <strong>확률 분포</strong>를 계산
+                </li>
+                <li>
+                    그 안에서 하나를 골라 입력에 붙이고 <strong>다시 호출</strong>
+                </li>
+                <li>
+                    항상 1등을 고르진 않음 — 같은 질문에 답이 매번 다른 이유
+                </li>
+                <li>
+                    종료 토큰이 나오면 멈춤 — "충분히 답했다"는 모델 자체의 신호
+                </li>
+            </ul>
+            <div class="gen-viz">
+                <div class="gen-prompt">강아지가 공원에서 ___</div>
+                <ul class="gen-cands">
+                    <li>
+                        <span class="cand-token">놀았다</span>
+                        <span class="cand-bar"
+                            ><span style="width: 84%"></span
+                        ></span>
+                        <span class="cand-prob">0.42</span>
+                    </li>
+                    <li>
+                        <span class="cand-token">뛰었다</span>
+                        <span class="cand-bar"
+                            ><span style="width: 62%"></span
+                        ></span>
+                        <span class="cand-prob">0.31</span>
+                    </li>
+                    <li>
+                        <span class="cand-token">짖었다</span>
+                        <span class="cand-bar"
+                            ><span style="width: 30%"></span
+                        ></span>
+                        <span class="cand-prob">0.15</span>
+                    </li>
+                </ul>
+                <div class="gen-loop">샘플 → 입력에 append → 다시 호출</div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Output · Sampling Loop</span>
+    </div>
+</section>
+
+<!-- LLM 정리 — 한 문장으로 -->
+<section class="slide content-slide">
+    <div class="slide-number">09 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">정리</div>
+        <h2 class="reveal">
+            LLM = 다음 토큰을 <em>확률 기반으로 골라가며</em> 텍스트를 만드는 모델
+        </h2>
+        <ul class="bullets reveal">
+            <li>
+                결국 <strong>입력 → 출력 함수</strong> — 단지 그 함수가
+                수십억 파라미터 위에서 토큰 단위로 작동할 뿐
+            </li>
+            <li>잘하는 것: 텍스트 생성, 요약, 분류, 코드 작성, 추론 보조</li>
+            <li>
+                다음 슬라이드부터는 이 모델이 <strong>못 하는 것</strong> 세 가지를 본다
+            </li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>What is LLM · Recap</span>
+    </div>
+</section>
+
+<!-- 한계 1 — 지식 -->
+<section class="slide content-slide">
+    <div class="slide-number">10 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">한계 1 — 지식</div>
+        <h2 class="reveal">학습 시점 이후의 지식이 <em>없다</em></h2>
+        <ul class="bullets reveal">
+            <li>학습 cutoff 이후의 최신 정보를 모름</li>
+            <li>사내 문서, 개인 데이터, 도메인 지식은 모델에 들어있지 않음</li>
+            <li>
+                모르는 걸 모른다고 말하지 않고 그럴듯하게 만들어내기도 함
+                (<strong>hallucination</strong>)
+            </li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Limit 1 · Knowledge</span>
+    </div>
+</section>
+
+<!-- 한계 2 — 행동 -->
+<section class="slide content-slide">
+    <div class="slide-number">11 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">한계 2 — 행동</div>
+        <h2 class="reveal">행동(action)을 <em>직접 수행하지 못한다</em></h2>
+        <ul class="bullets reveal">
+            <li>
+                DB 조회, API 호출, 파일 접근, 브라우저 조작을 직접 수행 못 함
+            </li>
+            <li>출력은 언제나 <strong>텍스트</strong> — 명령이 아닌 묘사</li>
+            <li>외부 시스템과 연결되려면 다른 누군가(host)가 필요함</li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Limit 2 · Action</span>
+    </div>
+</section>
+
+<!-- 한계 3 — 지속성 -->
+<section class="slide content-slide">
+    <div class="slide-number">12 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">한계 3 — 지속성</div>
+        <h2 class="reveal">한 번의 응답으로 <em>끝나는 일만 한다</em></h2>
+        <ul class="bullets reveal">
+            <li>복잡한 목표는 여러 단계로 나뉨 — 한 응답에 다 들어가지 않음</li>
+            <li>중간 결과를 보고 다음 행동을 다시 결정해야 함</li>
+            <li>모델 자체에는 "다음 step으로 가자"라는 기제가 없음</li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Limit 3 · Persistence</span>
+    </div>
+</section>
+
+<!-- 보완 1 — RAG / Memory -->
+<section class="slide content-slide">
+    <div class="slide-number">13 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">보완 1 — 지식</div>
+        <p class="problem-recap reveal">
+            ↳ 한계 1: 학습 시점 이후의 지식이 없다
+        </p>
+        <h2 class="reveal">외부 지식을 <em>컨텍스트에 주입</em>한다</h2>
+        <ul class="bullets reveal">
+            <li>
+                질문과 관련된 문서를 vector store에서 검색해 프롬프트에 추가
+            </li>
+            <li>
+                사내 위키 · 매뉴얼 · 코드 · 이메일 — 모델이 모르던 정보를 보충
+            </li>
+            <li>실시간 검색으로 학습 cutoff 이후 정보도 채움</li>
+            <li>
+                키워드:
+                <strong>RAG (Retrieval-Augmented Generation) · Memory</strong>
+            </li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Solution 1 · RAG</span>
+    </div>
+</section>
+
+<!-- 보완 2 — Tool Calling -->
+<section class="slide content-slide">
+    <div class="slide-number">14 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">보완 2 — 행동</div>
+        <p class="problem-recap reveal">
+            ↳ 한계 2: 행동(action)을 직접 수행하지 못한다
+        </p>
+        <h2 class="reveal">host에게 "이거 실행해 달라"고 <em>요청</em>한다</h2>
+        <ul class="bullets reveal">
+            <li>
+                모델은 "이 tool을 이런 인자로 호출해 달라"는 구조화된 텍스트를
+                생성
+            </li>
+            <li>
+                실제 실행은 host application이 <strong>검증하고 수행</strong>
+            </li>
+            <li>결과를 다시 모델에 돌려주면 다음 행동을 결정</li>
+            <li>키워드: <strong>Tool Calling · Function Calling</strong></li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Solution 2 · Tools</span>
+    </div>
+</section>
+
+<!-- 보완 3 — Planning / Loop -->
+<section class="slide content-slide">
+    <div class="slide-number">15 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">보완 3 — 지속성</div>
+        <p class="problem-recap reveal">
+            ↳ 한계 3: 한 번의 응답으로 끝나는 일만 한다
+        </p>
+        <h2 class="reveal">반복적으로 <em>결정 + 행동</em>한다</h2>
+        <ul class="bullets reveal">
+            <li>
+                <strong>Loop (구조)</strong> — 행동 → 결과 관찰 → 다음 행동 결정의 <em>반복 형식</em>. stop 조건에서 종료
+            </li>
+            <li>
+                <strong>Planning (결정 로직)</strong> — Loop 안 매 decide 자리에서 LLM이 <em>다음 행동을 정함</em>. 목표 분해 · self-reflection 등
+            </li>
+            <li>
+                둘은 <em>다른 축</em> — Loop는 skeleton, Planning은 그 안의 reasoning. ReAct식은 둘이 한 호출에 묶임
+            </li>
+            <li>키워드: <strong>Loop · Planning</strong> (ReAct, Planner-Executor, …)</li>
+        </ul>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span
+        ><span>Solution 3 · Loop</span>
+    </div>
+</section>
+
+<!-- Lilian Weng 프레임 -->
+<section class="slide content-slide">
+    <div class="slide-number">16 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">Lilian Weng 프레임 (2023)</div>
+        <h2 class="reveal">앞서 본 흐름의 <em>한 줄 요약</em></h2>
+        <p class="reveal formula-line">
+            AI Agent
+            <em class="accent-em">=</em>
+            LLM
+            <em class="accent-em">+</em>
+            Planning
+            <em class="accent-em">+</em>
+            Memory
+            <em class="accent-em">+</em>
+            Tools
+        </p>
+        <p class="reveal formula-line formula-secondary">
+            <em class="accent-em">↻</em>
+            in a Loop
+        </p>
+        <p class="reveal copy-note">
+            OpenAI Lilian Weng이 2023년에 정리한 표준 프레임 — 지금도 production
+            에이전트 설계의 기준선.
+        </p>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span><span>Framework</span>
+    </div>
+</section>
+
+<section class="slide takeaway-slide">
+    <div class="slide-number">17 / 96</div>
+    <div class="takeaway-card reveal">
+        <div class="takeaway-label">Section 01 · Takeaway</div>
+        <div class="takeaway-text">
+            이 강의의 시각<br />— LLM의 한계 보완이 모이면 Agent.
+        </div>
+        <div class="takeaway-note">
+            지식·행동·지속성 한계를 RAG·Tools·Planning·Loop로 메우는 흐름으로
+            Agent를 보면, 다음 섹션부터 등장하는 운영 layer들이 왜 생겼는지가
+            자연스럽게 따라온다. (공식 정의는 아니고, 이 강의가 채택한 lens.)
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 01</span><span class="dot">●</span><span>Takeaway</span>
+    </div>
+</section>
+<!-- ========================================================= -->
+<!-- SECTION 2 — Agent의 최소 구현 -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+    <div class="slide-number">18 / 96</div>
+    <div class="num reveal">0<em>2</em></div>
+    <div class="section-name reveal">Agent의 최소 구현</div>
+    <div class="section-sub reveal">
+        Agent loop는 코드로 어떻게 생겼나 — 약 40줄짜리 ReAct loop가 그 답.
+    </div>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span
+        ><span>Implementation</span>
+    </div>
+</section>
+
+<!-- ReAct loop — 가로 흐름 + cycle arc -->
+<section class="slide content-slide">
+    <div class="slide-number">19 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">ReAct loop</div>
+        <h2 class="reveal">네 단계의 <em>반복</em></h2>
+        <div class="flow-loop reveal">
+            <div class="flow-row">
+                <div class="flow-step">
+                    <div class="flow-step-name">observe</div>
+                    <div class="flow-step-tag">read state</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-step-name">decide</div>
+                    <div class="flow-step-tag">llm call</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-step-name">act</div>
+                    <div class="flow-step-tag">executor</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step flow-step-loop">
+                    <div class="flow-step-name">observe</div>
+                    <div class="flow-step-tag">loop back</div>
+                </div>
+            </div>
+            <div class="flow-arc-wrap">
+                <svg
+                    class="flow-arc"
+                    viewBox="0 0 100 18"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M 88 0 V 12 H 12 V 0"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        vector-effect="non-scaling-stroke"
+                    />
+                </svg>
+                <span class="flow-arc-tip" aria-hidden="true"></span>
+            </div>
+            <p class="flow-loop-label">
+                ↺ stop 조건을 만나면 (tool 호출 없이 최종 답변) loop 종료
+            </p>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Loop</span>
+    </div>
+</section>
+
+<!-- Tool 정의 — JSON schema -->
+<section class="slide code-slide">
+    <div class="slide-number">20 / 96</div>
+    <div class="eyebrow reveal">Tool 정의</div>
+    <h2 class="reveal code-slide-heading">
+        JSON schema로 <em>LLM에 알려준다</em>
+    </h2>
+    <pre
+        class="reveal"
+    ><span class="com"># tool registry — 인터페이스 명세 + 실제 함수 매핑</span>
+<span class="kw">def</span> <span class="fn">search_db</span>(query: <span class="kw">str</span>) -&gt; <span class="kw">str</span>:
+    <span class="kw">return</span> <span class="str">f"results for: {query}"</span>
+
+TOOLS = [{
+    <span class="str">"name"</span>: <span class="str">"search_db"</span>,
+    <span class="str">"description"</span>: <span class="str">"사내 DB에서 키워드 검색"</span>,
+    <span class="str">"parameters"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {
+            <span class="str">"query"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}
+        },
+        <span class="str">"required"</span>: [<span class="str">"query"</span>]
+    }
+}]
+HANDLERS = {<span class="str">"search_db"</span>: search_db}  <span class="com"># 이름 → 함수</span></pre>
+    <p class="reveal support-note">
+        → LLM은 이 schema를 system context처럼 받아서 "어떤 도구가 있고, 어떤
+        인자를 받는지" 안다.
+    </p>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span
+        ><span>Tool Schema</span>
+    </div>
+</section>
+
+<!-- LLM 출력 — structured tool_call -->
+<section class="slide code-slide">
+    <div class="slide-number">21 / 96</div>
+    <div class="eyebrow reveal">LLM의 출력</div>
+    <h2 class="reveal code-slide-heading">
+        텍스트 대신 <em>구조화된 호출 요청</em>
+    </h2>
+    <pre class="reveal"><span class="com"># 모델이 반환하는 응답 (단순화)</span>
+response = {
+    <span class="str">"tool_calls"</span>: [{
+        <span class="str">"name"</span>: <span class="str">"search_db"</span>,
+        <span class="str">"arguments"</span>: {<span class="str">"query"</span>: <span class="str">"production logs"</span>}
+    }],
+    <span class="str">"text"</span>: <span class="kw">None</span>   <span class="com"># 아직 최종 답변 X</span>
+}</pre>
+    <p class="reveal support-note">
+        → "이 도구를 이런 인자로 호출해 달라"는 <strong>요청</strong>일 뿐. 실행
+        권한은 host에게 있다.
+    </p>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Tool Call</span>
+    </div>
+</section>
+
+<!-- Host 실행 — validate → call → observe -->
+<section class="slide code-slide">
+    <div class="slide-number">22 / 96</div>
+    <div class="eyebrow reveal">Host의 실행</div>
+    <h2 class="reveal code-slide-heading">
+        validate <em>→</em> call <em>→</em> observe
+    </h2>
+    <pre
+        class="reveal"
+    ><span class="kw">for</span> call <span class="kw">in</span> response.tool_calls:
+    <span class="com"># 1. validate — 등록된 tool인가?</span>
+    <span class="kw">if</span> call.name <span class="kw">not in</span> HANDLERS:
+        <span class="kw">raise</span> <span class="fn">UnknownToolError</span>(call.name)
+
+    <span class="com"># 2. call — host가 실제 함수 실행</span>
+    result = HANDLERS[call.name](**call.arguments)
+
+    <span class="com"># 3. observe — 결과를 messages에 추가</span>
+    messages.append({
+        <span class="str">"role"</span>: <span class="str">"tool"</span>,
+        <span class="str">"name"</span>: call.name,
+        <span class="str">"content"</span>: <span class="kw">str</span>(result)
+    })</pre>
+    <p class="reveal support-note">
+        → 다음 LLM call은 이 결과까지 본 messages 배열을 다시 받음 — loop
+        continues.
+    </p>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Execute</span>
+    </div>
+</section>
+
+<!-- Memory — 두 종류 (short-term vs long-term) -->
+<section class="slide content-slide">
+    <div class="slide-number">23 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">Memory의 두 종류</div>
+        <h2 class="reveal">두 가지 <em>저장소</em></h2>
+        <div class="two-col reveal">
+            <div>
+                <h3>Short-term</h3>
+                <ul>
+                    <li>
+                        <code class="mono-text">messages</code> 배열 / context
+                        window
+                    </li>
+                    <li>대화의 즉시 맥락 — tool 결과까지 포함</li>
+                    <li>LLM 호출마다 통째로 전달</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Long-term</h3>
+                <ul>
+                    <li>vector store · DB · 파일 · wiki</li>
+                    <li>외부 저장소 — 필요할 때 검색</li>
+                    <li>RAG로 컨텍스트에 주입</li>
+                </ul>
+            </div>
+        </div>
+        <p class="reveal support-note">
+            short-term이 핵심 무대 — context window 안에 살아있는 동안 LLM이
+            본다. <br />길어지면 long-term으로 이주.
+        </p>
+    </div>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span
+        ><span>Memory · Two Stores</span>
+    </div>
+</section>
+
+<!-- Memory in code — messages 배열 실제 구조 (short-term 구체 예시) -->
+<section class="slide code-slide">
+    <div class="slide-number">24 / 96</div>
+    <div class="eyebrow reveal">Short-term in code</div>
+    <h2 class="reveal code-slide-heading">
+        <em>messages</em> 배열 한 호출에 통째로 보낸다
+    </h2>
+    <pre
+        class="reveal"
+    ><span class="com"># 한 LLM call = 이 배열을 통째로 보내는 것</span>
+messages = [
+    {<span class="str">"role"</span>: <span class="str">"system"</span>,    <span class="str">"content"</span>: <span class="str">"system prompt"</span>},
+    {<span class="str">"role"</span>: <span class="str">"user"</span>,      <span class="str">"content"</span>: <span class="str">"production logs 분석해줘"</span>},
+    {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"tool_calls"</span>: [...]},     <span class="com"># LLM 요청</span>
+    {<span class="str">"role"</span>: <span class="str">"tool"</span>,
+        <span class="str">"name"</span>: <span class="str">"search_db"</span>,
+        <span class="str">"content"</span>: <span class="str">"results..."</span>},                         <span class="com"># host 결과</span>
+    {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: <span class="str">"final answer"</span>},
+]</pre>
+    <p class="reveal support-note">
+        길어지면 context window 초과 → 요약 / 잘라내기 / vector
+        store(long-term)로 이주.
+    </p>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Memory</span>
+    </div>
+</section>
+
+<!-- Planning은 어디 있나 -->
+<section class="slide content-slide">
+    <div class="slide-number">25 / 96</div>
+    <div class="slide-content">
+        <div class="eyebrow reveal">Planning 패턴</div>
+        <h2 class="reveal">다음 행동을 정하는 <em>reasoning</em>의 종류</h2>
+        <p class="problem-recap reveal">
+            ↳ Lilian Weng (2023) Planning component 안의 sub-pattern들. 이 강의는 가장 단순한 ReAct.
+        </p>
+        <div class="two-col reveal">
+            <div>
+                <h3>Inline (per-step)</h3>
+                <ul>
+                    <li>매 decide step에서 reasoning + 결정을 한 LLM 호출에</li>
+                    <li>별도 planner 함수 없음 — 코드에 안 보임</li>
+                    <li>예: <strong>ReAct</strong> ← 이 강의 데모, CoT</li>
+                    <li>단순 · 적응적</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Pre-computed</h3>
+                <ul>
+                    <li>별도 LLM call이 전체 plan 생성</li>
+                    <li>실행 loop는 plan을 step별로 소비</li>
+                    <li>예: Plan-and-Execute, BabyAGI</li>
+                    <li>다단계 task · replan 가능 (Section 5/6)</li>
+                </ul>
+            </div>
+        </div>
+        <p class="reveal support-note">
+            ReAct는 <em>한 LLM 호출 안에서 reasoning + action 결정을 함께</em> 하는 self-reflection 계열 — 가장 단순해서 이 강의의 데모로 사용.
+        </p>
+    </div>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Planning</span>
+    </div>
+</section>
+
+<!-- Demo · 약 40줄 ReAct loop (전체 코드) -->
+<section class="slide code-slide">
+    <div class="slide-number">26 / 96</div>
+    <div class="eyebrow reveal">Demo · ReAct loop 전체</div>
+    <h2 class="reveal code-slide-heading">기본 구현은 <em>약 40줄 안에</em></h2>
+    <pre class="reveal code-medium"><span class="kw">import</span> os
+<span class="kw">from</span> google <span class="kw">import</span> genai
+
+<span class="com"># 1) Tool registry</span>
+<span class="kw">def</span> <span class="fn">search_db</span>(query: <span class="kw">str</span>) -&gt; <span class="kw">str</span>:
+    <span class="kw">return</span> <span class="str">f"results for: {query}"</span>
+
+TOOLS = [{
+    <span class="str">"name"</span>: <span class="str">"search_db"</span>,
+    <span class="str">"description"</span>: <span class="str">"사내 DB 검색"</span>,
+    <span class="str">"parameters"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {<span class="str">"query"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}},
+        <span class="str">"required"</span>: [<span class="str">"query"</span>],
+    },
+}]
+HANDLERS = {<span class="str">"search_db"</span>: search_db}
+
+<span class="com"># 2) ReAct loop</span>
+<span class="kw">def</span> <span class="fn">react_loop</span>(user_input: <span class="kw">str</span>, max_steps: <span class="kw">int</span> = <span class="kw">10</span>):
+    client = genai.<span class="fn">Client</span>(api_key=os.environ[<span class="str">"GEMINI_API_KEY"</span>])
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_input}]
+
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="kw">range</span>(max_steps):
+        resp = client.models.<span class="fn">generate_content</span>(
+            model=<span class="str">"gemini-2.5-flash"</span>,
+            contents=messages,
+            config={<span class="str">"tools"</span>: TOOLS},
+        )
+
+        <span class="kw">if not</span> resp.tool_calls:               <span class="com"># stop</span>
+            <span class="kw">return</span> resp.text
+
+        <span class="kw">for</span> call <span class="kw">in</span> resp.tool_calls:          <span class="com"># act + observe</span>
+            <span class="kw">if</span> call.name <span class="kw">not in</span> HANDLERS:
+                <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="str">f"unknown: {call.name}"</span>)
+            result = HANDLERS[call.name](**call.arguments)
+            messages.append({<span class="str">"role"</span>: <span class="str">"tool"</span>,
+                             <span class="str">"name"</span>: call.name,
+                             <span class="str">"content"</span>: <span class="kw">str</span>(result)})
+
+    <span class="kw">raise</span> <span class="fn">RuntimeError</span>(<span class="str">"max_steps exceeded"</span>)</pre>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Code</span>
+    </div>
+</section>
+
+<section class="slide takeaway-slide">
+    <div class="slide-number">27 / 96</div>
+    <div class="takeaway-card reveal">
+        <div class="takeaway-label">Section 02 · Takeaway</div>
+        <div class="takeaway-text">
+            기본 구현은 단순하다.<br />복잡한 것은 운영이다.
+        </div>
+        <div class="takeaway-note">
+            핵심 구현은 ~40줄 안에 들어간다. 본격적으로 복잡해지는 건
+            production에 올리고 나서부터 — trace, 평가, 비용, 권한, 실패 복구가
+            차례로 붙는 게 다음 섹션들의 주제다.
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>Section 02</span><span class="dot">●</span><span>Takeaway</span>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- SECTION 3 — Observability -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+<div class="slide-number">28 / 96</div>
+<div class="num reveal">0<em>3</em></div>
+<div class="section-name reveal">Observability</div>
+<div class="section-sub reveal">
+                loop 내부를 들여다보는 법 — trace 없이는 production 운영이
+                불가능하다.
+            </div>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Observability</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">29 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Production에 올리면</div>
+<h2 class="reveal">
+                    분명히 망가졌는데, <em>어디서</em> 어떻게 망가졌는지 모른다
+                </h2>
+<ul class="bullets reveal">
+<li>
+                        단일 LLM 호출은 입력/출력이 명확 → 디버깅 어렵지 않음
+                    </li>
+<li>
+                        에이전트는 다단계 loop. 한 요청이 5번, 10번 LLM 호출 +
+                        tool 호출
+                    </li>
+<li>
+                        출력이 잘못됐을 때 어느 단계에서 어긋났는지 추적 불가
+                    </li>
+<li>
+                        전통적 logging은 한계 — 무엇을 로깅할지 미리 정해야 함
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Problem</span>
+</div>
+</section>
+<section class="slide quote-slide">
+<div class="slide-number">30 / 96</div>
+<blockquote class="reveal">
+                Monitoring helps you answer questions you already know to
+                ask.<br/><em class="accent-em">Observability</em>
+                helps you answer the ones you didn't know you'd need to ask.
+            </blockquote>
+<cite class="reveal">— Honeycomb</cite>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Honeycomb</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">31 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">핵심 4지표</div>
+<h2 class="reveal">무엇을 <em>기록</em>해야 하는가</h2>
+<ul class="bullets reveal">
+<li>
+<strong>Trace</strong> — 한 요청이 어떤 단계를 거쳤는지
+                        (prompt → 모델 → tool → 결과 전체 흐름)
+                    </li>
+<li>
+<strong>Latency</strong> — 단계별 소요 시간. 어디가
+                        병목인지
+                    </li>
+<li>
+<strong>Token usage</strong> — 입출력 토큰 수. 비용에
+                        직결
+                    </li>
+<li>
+<strong>Error</strong> — 어디서 어떤 종류의 에러가
+                        났는지
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Metrics</span>
+</div>
+</section>
+<!-- Trace anatomy — 실제 trace가 어떻게 생겼나 -->
+<section class="slide code-slide">
+<div class="slide-number">32 / 96</div>
+<div class="eyebrow reveal">Trace는 어떻게 생겼나</div>
+<h2 class="reveal code-slide-heading">호출들의 <em>중첩 트리</em></h2>
+<pre class="reveal"><span class="com"># 한 요청 = 여러 LLM call + tool call의 nested tree</span>
+<span class="kw">[trace]</span> react_loop(<span class="str">"production logs 분석"</span>)  · 4.2s · $0.012
+  <span class="kw">[llm]</span> gemini-2.5-flash                 · 1.1s · 4.2K tok
+        in:  messages[2]
+        out: {<span class="str">"tool_calls"</span>: [{<span class="str">"name"</span>: <span class="str">"search_db"</span>, ...}]}
+  <span class="kw">[tool]</span> search_db(query=<span class="str">"production logs"</span>)  · 0.8s
+        out: <span class="str">"results: ..."</span>
+  <span class="kw">[llm]</span> gemini-2.5-flash                 · 1.5s · 5.8K tok
+        in:  messages[4] (+ tool result)
+        out: {<span class="str">"tool_calls"</span>: [...]}
+  <span class="kw">[tool]</span> search_db(query=<span class="str">"error patterns"</span>) · 0.7s
+        out: <span class="str">"..."</span>
+  <span class="kw">[llm]</span> gemini-2.5-flash                 · 1.2s · 6.3K tok
+        in:  messages[6]
+        out: {<span class="str">"text"</span>: <span class="str">"...분석 결과..."</span>}      <span class="com"># final</span></pre>
+<p class="reveal support-note">
+                → 각 노드에 입력 / 출력 / 시간 / 토큰이 붙음. 어디서 어긋났는지 <em>클릭 한 번에</em> 찾을 수 있다.
+            </p>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Trace Anatomy</span>
+</div>
+</section>
+<!-- SDK 적용 — 코드에 어떻게 붙이나 -->
+<section class="slide code-slide">
+<div class="slide-number">33 / 96</div>
+<div class="eyebrow reveal">SDK 적용</div>
+<h2 class="reveal code-slide-heading">데코레이터 한 줄로 <em>자동 캡처</em></h2>
+<pre class="reveal"><span class="kw">from</span> langfuse <span class="kw">import</span> observe
+<span class="kw">from</span> google <span class="kw">import</span> genai
+
+<span class="com"># 환경변수만 설정하면 자동 연결</span>
+<span class="com">#   LANGFUSE_PUBLIC_KEY=...</span>
+<span class="com">#   LANGFUSE_SECRET_KEY=...</span>
+
+<span class="fn">@observe</span>()                    <span class="com"># ← 이 한 줄</span>
+<span class="kw">def</span> <span class="fn">react_loop</span>(user_input: <span class="kw">str</span>):
+    client = genai.<span class="fn">Client</span>(...)
+    messages = [...]
+
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="kw">range</span>(max_steps):
+        resp = client.models.<span class="fn">generate_content</span>(...)
+        <span class="com"># 이 호출의 input/output/latency/token이</span>
+        <span class="com"># 자동으로 trace에 기록됨</span>
+        ...</pre>
+<p class="reveal support-note">
+                → SDK가 LLM 호출과 함수 호출을 가로채서 단계(span) 단위로 기록. 코드 변경 거의 없음.
+            </p>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>SDK</span>
+</div>
+</section>
+<section class="slide table-slide">
+<div class="slide-number">34 / 96</div>
+<div class="eyebrow reveal eyebrow-spaced">
+                생태계 도구
+            </div>
+<h2 class="reveal table-slide-heading">
+                현재 시장의
+                <em class="accent-em">관찰 도구</em>
+</h2>
+<table class="reveal">
+<thead>
+<tr>
+<th>도구</th>
+<th>특징</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LangSmith</strong></td>
+<td>LangChain 생태계의 공식 도구</td>
+<td>유료, 풀세트 지원</td>
+</tr>
+<tr>
+<td><strong>Langfuse</strong></td>
+<td>오픈소스, self-host 가능</td>
+<td>가장 많이 채택되는 OSS</td>
+</tr>
+<tr>
+<td><strong>Arize Phoenix</strong></td>
+<td>오픈소스, OpenTelemetry 표준</td>
+<td>기존 APM과 호환</td>
+</tr>
+</tbody>
+</table>
+<p class="reveal table-caption-note">
+                환경변수 하나만 추가하면 SDK가 자동으로 trace를 수집한다.
+            </p>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Tools</span>
+</div>
+</section>
+
+<section class="slide content-slide">
+<div class="slide-number">35 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">실습 데모 포인트</div>
+<h2 class="reveal">
+                    Trace UI에서 <em>"여기서 잘못됐네"</em>를 발견하는 경험
+                </h2>
+<ul class="bullets reveal">
+<li>
+                        오후 실습에서 직접 의도적으로 망가뜨린 에이전트 trace
+                        분석
+                    </li>
+<li>
+                        무한 loop, 잘못된 tool 선택, hallucination을 trace로
+                        확인
+                    </li>
+<li>
+                        console.log 분량의 텍스트 → 시각화된 단계별 화면으로
+                        디버깅 시간이 분 → 초 단위로 단축
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Demo</span>
+</div>
+</section>
+<section class="slide takeaway-slide">
+<div class="slide-number">36 / 96</div>
+<div class="takeaway-card reveal">
+<div class="takeaway-label">Section 03 · Takeaway</div>
+<div class="takeaway-text">
+                    trace 없이는<br/>production 운영이 불가능하다.
+                </div>
+<div class="takeaway-note">
+                    에이전트는 사전에 어디서 무엇이 잘못될지 예측할 수 없는
+                    시스템. 따라서 모든 단계의 입출력을 사후 탐색 가능한 형태로
+                    기록하는 것이 운영의 전제 조건이다.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 03</span><span class="dot">●</span><span>Takeaway</span>
+</div>
+</section>
+
+<!-- ========================================================= -->
+<!-- SECTION 4 — Evaluation -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+<div class="slide-number">37 / 96</div>
+<div class="num reveal">0<em>4</em></div>
+<div class="section-name reveal">Evaluation</div>
+<div class="section-sub reveal">
+                에이전트 품질을 체계적으로 측정 — rubric, metric, golden
+                dataset, 그리고 회귀를 막는 파이프라인까지.
+            </div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Evaluation</span>
+</div>
+</section>
+
+<!-- 평가란 무엇인가 -->
+<section class="slide content-slide">
+<div class="slide-number">38 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">평가란?</div>
+<h2 class="reveal">
+                    에이전트가 의도대로 동작하는지 <em>체계적으로</em> 확인하는 것
+                </h2>
+<ul class="bullets reveal">
+<li>
+                        입력 → 응답을 받아 <strong>사전 정의된 기준</strong>에 부합하는지 점수화·판정
+                    </li>
+<li>
+                        단발 테스트가 아니라 <strong>반복·자동화</strong> 가능한 프로세스
+                    </li>
+<li>
+                        결과는 boolean 1개가 아니라 <strong>여러 차원의 점수</strong>
+                        (정확성·도움도·안전성·비용·지연 등)
+                    </li>
+<li>
+                        "unit test"와 다른 점 — input/expected가 1:1로 안 떨어짐 →
+                        <strong>rubric 기반 채점</strong>
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Definition</span>
+</div>
+</section>
+
+<!-- Why eval — 구체 시나리오 -->
+<section class="slide content-slide">
+<div class="slide-number">39 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">평가가 없으면</div>
+<h2 class="reveal">이런 일이 <em>프로덕션에서</em> 일어난다</h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>모델 업데이트 후 톤 변화</strong> — 같은 prompt가
+                        갑자기 더 회피적·길어짐. 사용자 컴플레인이 쌓일 때까지 모름
+                    </li>
+<li>
+                        <strong>prompt 한 줄 추가의 회귀</strong> — 새 instruction이
+                        기존 잘 되던 도메인의 답변을 망가뜨림. 사용자 신고로 발견
+                    </li>
+<li>
+                        <strong>새 tool 추가의 환각 증가</strong> — 도메인 외 질문에
+                        새 tool이 잘못 호출되며 그럴듯한 거짓 답변
+                    </li>
+<li>
+                        공통 사이클 — <em>사후 발견 → 재현 → 디버깅 → 수정 → 재배포</em>의 비용 누적
+                    </li>
+<li>
+                        평가 인프라가 깔리면 — 변경 직후 자동 검증 →
+                        <strong>자신 있게 출시</strong>
+                    </li>
+</ul>
+<p class="reveal support-note">
+                    Anthropic Engineering — "Good evaluations help teams ship AI agents more confidently."
+                    (<a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank">demystifying-evals-for-ai-agents</a>)
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Why</span>
+</div>
+</section>
+
+<!-- 본질적 어려움 -->
+<section class="slide content-slide">
+<div class="slide-number">40 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">본질적 어려움</div>
+<h2 class="reveal">
+                    에이전트 품질을 <em>평가하기</em> 어려운 세 가지 이유
+                </h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>비결정성</strong> — 같은 입력에도 다른 출력.
+                        temperature가 0이어도 모델 업데이트로 달라짐
+                    </li>
+<li>
+                        <strong>정답 부재</strong> — "이 답변이 옳다"는 단일
+                        기준이 없음. 둘 다 합리적이지만 다른 답
+                    </li>
+<li>
+                        <strong>다단계의 복잡성</strong> — 에이전트는 한 응답이 아니라
+                        <em>여러 결정의 사슬</em>. 최종 답은 그럴듯해도 중간 step이
+                        엉터리일 수 있고, 어느 step에서 망가졌는지 추적·평가가 어려움
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Why hard</span>
+</div>
+</section>
+
+<!-- Rubric (정성) -->
+<section class="slide content-slide">
+<div class="slide-number">41 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">무엇을 측정하나 — Rubric</div>
+<h2 class="reveal">정성적 차원을 <em>1-5점 척도로</em> 명시</h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>correctness</strong> — 사실 정확성. reference가 있으면 직접 비교
+                    </li>
+<li>
+                        <strong>helpfulness</strong> — 사용자 의도 부합도.
+                        정답이 여럿일 수 있는 상황에서
+                    </li>
+<li>
+                        <strong>safety</strong> — 유해·민감·차별 여부
+                    </li>
+<li>
+                        <strong>채점 방법</strong> — 위 차원은 자유로운 응답의
+                        <em>의미</em>를 평가해야 하므로 코드로 못 잡음 →
+                        <strong>LLM-as-Judge</strong>가 1-5점 부여 (3단계에서 자세히)
+                    </li>
+</ul>
+<p class="reveal support-note">
+                    Rubric을 명시하는 행위 자체가 <em>프로덕트 요구사항을 정리하는 작업</em> — 평가의 강력한 부수효과.
+                    <br/>
+                    (출력 형식·schema 준수 같은 결정적 체크는 Rubric이 아니라 2단계 Code-based assertion에서 다룸)
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Rubric</span>
+</div>
+</section>
+
+<!-- Metric (정량) -->
+<section class="slide content-slide">
+<div class="slide-number">42 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">무엇을 측정하나 — Metric</div>
+<h2 class="reveal">정량적인 것은 <em>코드로 직접</em></h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>accuracy</strong> — 정답 일치율 (분류·추출처럼 정답이 있는 task)
+                    </li>
+<li>
+                        <strong>latency</strong> — p50/p95/p99 응답 시간. 사용자 경험 직결
+                    </li>
+<li>
+                        <strong>token cost</strong> — 입출력 token 수. 비용 직결
+                    </li>
+<li>
+                        <strong>tool call count</strong> — 한 요청당 LLM·tool 호출 수. 효율성 지표
+                    </li>
+<li>
+                        <strong>error rate</strong> — 실행 실패율 (timeout, validation, invalid args)
+                    </li>
+</ul>
+<p class="reveal support-note">
+                    Rubric(정성)과 Metric(정량) 둘 다 dashboard에 — 한쪽만으론 품질 측정 불충분.
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Metric</span>
+</div>
+</section>
+
+<!-- RAG-specific 지표 -->
+<section class="slide content-slide">
+<div class="slide-number">43 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">RAG 평가</div>
+<h2 class="reveal">검색과 생성을 <em>분리해서 측정</em></h2>
+<div class="two-col reveal">
+<div>
+<h3>Retrieval — 검색 품질</h3>
+<ul>
+<li><strong>Precision@k</strong> — top-k 결과 중 관련 문서 비율</li>
+<li><strong>Recall@k</strong> — 전체 관련 문서 중 검색된 비율</li>
+<li>k 키우면 recall↑ precision↓ 트레이드오프</li>
+</ul>
+</div>
+<div>
+<h3>Generation — 응답 품질</h3>
+<ul>
+<li><strong>Faithfulness</strong> — 답변이 검색 결과에 충실한가 (외부 지식 X)</li>
+<li><strong>Answer relevance</strong> — 답변이 질문에 부합하는가</li>
+<li><strong>Context utilization</strong> — 검색 결과를 실제로 사용했는가</li>
+</ul>
+</div>
+</div>
+<p class="reveal support-note">
+                    왜 분리하나 — 답변이 틀렸을 때 <em>검색이 잘못된 건지, 생성이 잘못된 건지</em>
+                    분리해야 어느 layer를 고칠지 보인다.
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>RAG eval</span>
+</div>
+</section>
+
+<!-- Golden Dataset — what & why -->
+<section class="slide content-slide">
+<div class="slide-number">44 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Golden Dataset — 1</div>
+<h2 class="reveal">평가의 <em>기준선</em> — 잘 큐레이션된 hard sample 50개</h2>
+<ul class="bullets reveal">
+<li>손으로 큐레이션한 <strong>input + 평가 기준</strong>의 묶음</li>
+<li>
+                        핵심 — production 실패는 <strong>edge case에서 일어남</strong>.
+                        일반 케이스는 어차피 잘 됨
+                    </li>
+<li>
+                        <strong>50 hard examples &gt; 5,000 easy ones</strong> —
+                        양보다 어려움·다양성
+                    </li>
+<li>
+                        회귀 detect의 <strong>single source of truth</strong> —
+                        prompt·모델 변경 시 자동 재실행
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Golden Set</span>
+</div>
+</section>
+
+<!-- Golden Dataset — how to build -->
+<section class="slide content-slide">
+<div class="slide-number">45 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Golden Dataset — 2</div>
+<h2 class="reveal"><em>어렵고 다양한</em> 50개부터</h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>Source 1 — 과거 prod 실패</strong> — incident에서 망가진 입력 그대로 캡처
+                    </li>
+<li>
+                        <strong>Source 2 — adversarial</strong> — "이런 식으로 깨지지 않을까" 의도적 hard case
+                    </li>
+<li>
+                        <strong>Source 3 — 약점 도메인</strong> — 학습 데이터에서 underrepresented 영역
+                    </li>
+<li>
+                        <strong>Source 4 — 회귀 후보</strong> — 직전 변경에서 망가졌던 케이스
+                    </li>
+<li>
+                        균형 — 한쪽으로 쏠리면 평가가 <em>blind</em>.
+                        카테고리별 분포 관리
+                    </li>
+<li>
+                        살아있는 dataset — 매 prod 실패가 추가 후보. <strong>늘 자라야 함</strong>
+                    </li>
+</ul>
+<p class="reveal support-note">
+                    Anthropic — "20-50 simple tasks drawn from real failures is a great start."
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Build Golden</span>
+</div>
+</section>
+
+<!-- Golden Dataset entry 예시 -->
+<section class="slide code-slide">
+<div class="slide-number">46 / 96</div>
+<div class="eyebrow reveal">Golden Dataset entry</div>
+<h2 class="reveal code-slide-heading">한 row가 <em>어떻게 생겼나</em></h2>
+<pre class="reveal"><span class="com"># golden_dataset/edge-001.yaml</span>
+<span class="str">id</span>: edge-001
+<span class="str">input</span>: |
+  사내 인증 시스템에서 OAuth refresh token이
+  만료된 사용자 분석해줘
+<span class="str">expected</span>:
+  must_call_tools:
+    - name: search_db
+      args_contains: [<span class="str">"oauth"</span>, <span class="str">"refresh"</span>]
+  must_mention:    [<span class="str">"expiry"</span>, <span class="str">"user_id"</span>]
+  must_not_say:    [<span class="str">"I don't know"</span>]   <span class="com"># 회피 답변 금지</span>
+<span class="str">eval_criteria</span>:
+  correctness:  <span class="str">"&gt;= 4"</span>
+  helpfulness:  <span class="str">"&gt;= 4"</span>
+<span class="str">notes</span>: |
+  지난 분기 prod 인시던트에서 망가진 사례.
+  refresh token expiry 처리 빠지면 실패.</pre>
+<p class="reveal support-note">
+                → 50개 정도의 hard sample을 이런 형태로 큐레이션. CI에서 prompt가 바뀔 때마다 전부 자동 실행.
+            </p>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Dataset Entry</span>
+</div>
+</section>
+
+<!-- 채점 1단계 — Vibe Check -->
+<section class="slide content-slide">
+<div class="slide-number">47 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">채점 진화 — 1단계</div>
+<h2 class="reveal">Vibe Check — <em>Smoke Test</em>의 LLM 버전</h2>
+<ul class="bullets reveal">
+<li>개발자가 직접 결과를 보고 "느낌상" 좋은지 판단</li>
+<li>가장 빠르고, 가장 흔하게 쓰임</li>
+<li>
+                        한계 — 주관적, 확장 불가, 회귀를 자동으로 못 잡음.
+                        <strong>필요하지만 불충분</strong>
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Stage 1 · Vibe</span>
+</div>
+</section>
+
+<!-- 채점 2단계 — Code-based assertion -->
+<section class="slide content-slide">
+<div class="slide-number">48 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">채점 진화 — 2단계</div>
+<h2 class="reveal">Code-based assertion — 결정적 룰로 <em>회귀 차단</em></h2>
+<ul class="bullets reveal">
+<li>
+                        <strong>must_call_tools</strong> — 기대한 tool들이 호출됐는가
+                        (예: oauth 질문엔 search_db 호출 필수)
+                    </li>
+<li>
+                        <strong>must_mention / must_not_say</strong> — 답변에 특정 표현 포함/제외
+                        (예: "I don't know" 회피 답변 금지)
+                    </li>
+<li>
+                        <strong>schema validation</strong> — 출력 JSON 형식 준수
+                    </li>
+<li>
+                        <strong>arg validation</strong> — tool 호출 인자가 schema에 맞는가
+                    </li>
+<li>
+                        장점 — <strong>deterministic, fast, cheap</strong>. CI에서 즉시 실행
+                    </li>
+<li>
+                        한계 — 의미 검증은 못함 → 다음 단계 LLM-as-Judge로 보완
+                    </li>
+</ul>
+<p class="reveal support-note">
+                    Day 1 실습의 <code>evaluate.py</code>가 정확히 이 형태 — must_call_tools / must_mention / must_not_say 룰로 자동 검증.
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Stage 2 · Code</span>
+</div>
+</section>
+
+<!-- 채점 3단계 — LLM-as-Judge -->
+<section class="slide content-slide">
+<div class="slide-number">49 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">채점 진화 — 3단계</div>
+<h2 class="reveal">LLM-as-Judge — 다른 LLM이 <em>응답을 평가</em></h2>
+<ul class="bullets reveal">
+<li>
+                        일부 벤치마크에서 인간 선호와 <strong>80%+ 수준</strong>의 일치, 단 bias와 calibration 문제 존재
+                    </li>
+<li>주의 — Bias 3종:</li>
+<li class="dense bullet-indent">
+                        <strong>Verbosity bias</strong> — 긴 답변을 선호
+                    </li>
+<li class="dense bullet-indent">
+                        <strong>Position bias</strong> — 먼저 나온 답변을 선호
+                    </li>
+<li class="dense bullet-indent">
+                        <strong>Self-enhancement bias</strong> — 자기 모델 계열을 더 높게 평가
+                    </li>
+<li>
+                        완화 — 여러 judge로 jury 구성, 인간 annotation으로 calibration (85%+ 일치 목표)
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Stage 3 · Judge</span>
+</div>
+</section>
+
+<!-- Judge prompt 예시 -->
+<section class="slide code-slide">
+<div class="slide-number">50 / 96</div>
+<div class="eyebrow reveal">Judge prompt 예시</div>
+<h2 class="reveal code-slide-heading">평가용 <em>system prompt + scoring rubric</em></h2>
+<pre class="reveal"><span class="com"># judge LLM에게 보내는 prompt</span>
+<span class="kw">SYSTEM</span>:
+You are evaluating an AI agent's response.
+
+Task:           {task}
+Agent's Answer: {answer}
+Reference:      {reference}    <span class="com"># 있으면 비교 기준</span>
+
+Score on 1-5 scale:
+  - correctness  — answer matches reference?
+  - helpfulness  — answers user's intent?
+  - safety       — any harmful content?
+
+Return JSON:
+{
+  <span class="str">"correctness"</span>: 1-5,
+  <span class="str">"helpfulness"</span>: 1-5,
+  <span class="str">"safety"</span>:      1-5,
+  <span class="str">"reasoning"</span>:   <span class="str">"brief explanation"</span>
+}</pre>
+<p class="reveal support-note">
+                → 이 prompt를 다른 LLM에 보내서 JSON 점수 회수. 평균이 threshold (예: 4.0) 이상이면 통과로 처리.
+            </p>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Judge Prompt</span>
+</div>
+</section>
+
+<!-- 두 종류 — Capability vs Regression -->
+<section class="slide content-slide">
+<div class="slide-number">51 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">두 종류의 평가</div>
+<h2 class="reveal">어떻게 <em>나아갈 것인가</em> / 어떻게 <em>유지할 것인가</em></h2>
+<div class="two-col reveal">
+<div>
+<h3>Capability — 역량 평가</h3>
+<ul>
+<li>질문 — "이 에이전트가 <strong>무엇을 잘 하는가</strong>?"</li>
+<li>어려운 과제로 시작 — 통과율 낮아도 OK</li>
+<li>개선되며 통과율이 100%에 가까워지면 졸업 (새 어려운 과제로 이동)</li>
+<li>예: 새 도메인 과제, 어려운 사례 모음</li>
+</ul>
+</div>
+<div>
+<h3>Regression — 회귀 평가</h3>
+<ul>
+<li>질문 — "이전에 잘 하던 걸 <strong>여전히 잘 하는가</strong>?"</li>
+<li>항상 ~100% 통과율 유지가 목표</li>
+<li>점수 하락 = 어딘가 깨짐 → 즉시 수정</li>
+<li>예: 이미 풀던 과제, 과거 실패 → 재발 방지</li>
+</ul>
+</div>
+</div>
+<p class="reveal support-note">
+                    Anthropic — "Hill-climb on capability evals, but run regression evals to catch breakage elsewhere." 두 축이 함께 굴러가야 안전.
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Two Types</span>
+</div>
+</section>
+
+<!-- 일찍 시작하라 -->
+<section class="slide content-slide">
+<div class="slide-number">52 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">일찍 시작하라</div>
+<h2 class="reveal">평가는 <em>늦게 시작할수록 만들기 어렵다</em></h2>
+<ul class="bullets reveal">
+<li>시작은 작아도 됨 — <strong>실패 사례 20~50개</strong>로 충분</li>
+<li>새 모델 채택 사이클이 <strong>주 → 일 단위</strong>로 단축 — 새 모델 나와도 즉시 자동 검증</li>
+<li>작은 샘플로도 큰 효과 — 적은 데이터로도 회귀 잡힘</li>
+<li>늦게 시작하면 실패 사례를 잊고 다시 못 잡음 → 기회비용 누적</li>
+</ul>
+<p class="reveal support-note">
+                    Anthropic — "Evals get harder to build the longer you wait. … 20-50 simple tasks drawn from real failures is a great start."
+                </p>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Start Early</span>
+</div>
+</section>
+
+<!-- CI/CD 통합 -->
+<section class="slide content-slide">
+<div class="slide-number">53 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">통합</div>
+<h2 class="reveal">CI/CD에 <em>회귀 테스트</em>로 결합</h2>
+<ul class="bullets reveal">
+<li>prompt가 바뀌면 golden dataset 자동 실행</li>
+<li>점수가 떨어지면 deploy 차단</li>
+<li>적용 사례 — Booking.com, GitHub Copilot, DoorDash</li>
+<li>
+                        평가는 한 번 통과하는 게이트가 아니라
+                        <strong>파이프라인의 일부</strong>
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>CI/CD</span>
+</div>
+</section>
+
+<!-- Takeaway -->
+<section class="slide takeaway-slide">
+<div class="slide-number">54 / 96</div>
+<div class="takeaway-card reveal">
+<div class="takeaway-label">Section 04 · Takeaway</div>
+<div class="takeaway-text">
+                    평가는 게이트가 아니라<br/>지속적 프로세스다.
+                </div>
+<div class="takeaway-note">
+                    한 번 통과하고 끝나는 시험이 아니라, prompt가 바뀔 때마다,
+                    모델이 업데이트될 때마다 자동으로 돌아가는 파이프라인의
+                    일부여야 한다.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 04</span><span class="dot">●</span><span>Takeaway</span>
+</div>
+</section>
+
+
+        <!-- ========================================================= -->
+        <!-- DAY 1 PRACTICE -->
+        <!-- ========================================================= -->
+        <section class="slide practice-slide">
+            <div class="slide-number">55 / 96</div>
+            <div class="eyebrow reveal">Day 1 · 실습</div>
+            <h2 class="reveal">단일 에이전트를 <em>만들고 검증한다</em></h2>
+            <p class="reveal practice-intro">
+                사전 셋업된 ReAct 에이전트를 실행하고, trace를 분석하고,
+                평가셋을 돌려본다. 의도적으로 망가뜨려보고, trace로 진단하는
+                사이클을 한 번 완수한다.
+            </p>
+            <div class="slide-footer">
+                <span>Practice</span><span class="dot">●</span
+                ><span>Day 1</span>
+            </div>
+        </section>
+
+        <section class="slide practice-slide">
+            <div class="slide-number">56 / 96</div>
+            <div class="eyebrow reveal">5단계 흐름 · + 는 옵션</div>
+            <h2 class="reveal">실습 <em>스텝</em></h2>
+            <div class="practice-grid reveal">
+                <span class="step-num">01</span
+                ><span class="step-text"
+                    >셋업 + Langfuse 가입 + <code>agent.py</code> walkthrough</span
+                ><span class="step-time">30분</span>
+                <span class="step-num">02</span
+                ><span class="step-text"
+                    >두 번째 tool 추가<br /><em>+ 인자 validation</em></span
+                ><span class="step-time">10~15분</span>
+                <span class="step-num">03</span
+                ><span class="step-text"
+                    ><code>@observe</code> + Langfuse UI 확인<br /><em>+ custom metadata</em></span
+                ><span class="step-time">10~15분</span>
+                <span class="step-num">04</span
+                ><span class="step-text"
+                    >망가진 시나리오 3종 trace 진단<br /><em>+ 1개 fix</em></span
+                ><span class="step-time">10~15분</span>
+                <span class="step-num">05</span
+                ><span class="step-text"
+                    >5문항 평가 + 본인 사례 추가 · Q&amp;A<br /><em>+ rubric 수정</em></span
+                ><span class="step-time">10~15분</span>
+            </div>
+            <div class="slide-footer">
+                <span>Practice</span><span class="dot">●</span
+                ><span>Day 1 · Steps</span>
+            </div>
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- DAY 2 INTRO -->
+        <!-- ========================================================= -->
+        <section class="slide content-slide">
+            <div class="slide-number">57 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">Previously on Day 1</div>
+                <h2 class="reveal">
+                    어제 우리는 <em>단일 에이전트</em>를 제대로 만들었다
+                </h2>
+                <ul class="bullets reveal">
+                    <li>
+                        구성 요소를 알았다 — LLM + Planning + Memory + Tools
+                    </li>
+                    <li>내부를 들여다봤다 — Observability, trace</li>
+                    <li>품질을 측정했다 — Evaluation, golden dataset</li>
+                    <li>오늘은 그 위에 layer를 더 쌓는다</li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Day 2</span><span class="dot">●</span><span>Recap</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">58 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">오늘의 주제</div>
+                <h2 class="reveal">
+                    production에서 <em>추가로 책임지는 영역</em>
+                </h2>
+                <ul class="bullets reveal">
+                    <li>한 명으로 부족할 때 — <strong>Multi-Agent</strong></li>
+                    <li>오래 살아야 할 때 — <strong>Orchestration</strong></li>
+                    <li>
+                        비용이 폭발할 때 — <strong>Cost Structure</strong>
+                    </li>
+                    <li>
+                        안전하게 운영해야 할 때 —
+                        <strong>Guardrails</strong> (다층 방어)
+                    </li>
+                    <li>
+                        그리고, loop가 어디로 진화하고 있는가 —
+                        <strong>Emerging Patterns</strong>
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Day 2</span><span class="dot">●</span><span>Topics</span>
+            </div>
+        </section>
+
+<!-- ========================================================= -->
+<!-- SECTION 5 — Multi-Agent -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+<div class="slide-number">59 / 96</div>
+<div class="num reveal">0<em>5</em></div>
+<div class="section-name reveal">Multi-Agent</div>
+<div class="section-sub reveal">
+                단일 에이전트의 한계와 협업 — 분산은 새로운 종류의 복잡도를
+                만든다.
+            </div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Multi-Agent</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">60 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">단일 에이전트의 한계</div>
+<h2 class="reveal">
+                    tool이 50개가 넘으면 <em>무슨 일이 일어나는가</em>
+</h2>
+<ul class="bullets reveal">
+<li>
+<strong>컨텍스트 폭발</strong> — 모든 tool 설명이 system
+                        prompt에 → 토큰 비용 ↑, 모델 혼란
+                    </li>
+<li>
+<strong>역할 혼란</strong> — 너무 많은 책임을 한 LLM이
+                        짊어짐 → 잘못된 도구 자주 선택
+                    </li>
+<li>
+<strong>디버깅 난이도</strong> — 한 요청이 어느 도구를
+                        거치는지 trace가 너무 복잡
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Limits</span>
+</div>
+</section>
+<section class="slide takeaway-slide">
+<div class="slide-number">61 / 96</div>
+<div class="takeaway-card reveal outline-takeaway-card">
+<div class="takeaway-label text-accent">
+                    중요한 구분
+                </div>
+<div class="takeaway-text text-primary">
+                    Multi-Agent <span class="text-accent">≠</span> Many
+                    Agents
+                </div>
+<div class="takeaway-note text-secondary">
+                    여러 에이전트를 띄우는 것 자체로는 multi-agent가 아니다.
+                    <strong class="text-primary">협업이 본질</strong>이다
+                    — 하나가 못 푸는 문제를 분담해서 해결하는 시스템.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Definition</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">62 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">핵심 패턴</div>
+<h2 class="reveal">Multi-Agent의 <em>3가지 협업 양상</em></h2>
+<ul class="bullets reveal">
+<li>
+<strong>Supervisor</strong> — 한 에이전트가 다른
+                        에이전트들을 지휘. 사용자 요청을 받아 분배
+                    </li>
+<li>
+<strong>Handoff</strong> — 자기 역할이 끝나면 다음
+                        에이전트로 작업을 넘김 (chain)
+                    </li>
+<li>
+<strong>Parallel</strong> — 독립된 부분을 여러
+                        에이전트가 동시에 처리, 결과를 합침
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Patterns</span>
+</div>
+</section>
+<section class="slide table-slide">
+<div class="slide-number">63 / 96</div>
+<div class="eyebrow reveal eyebrow-spaced">
+                Frameworks
+            </div>
+<h2 class="reveal table-slide-heading">
+                세 가지
+                <em class="accent-em">메탈 모델</em>
+</h2>
+<table class="reveal">
+<thead>
+<tr>
+<th>Framework</th>
+<th>패러다임</th>
+<th>적합한 케이스</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LangGraph</strong></td>
+<td>그래프 (노드 + 엣지)</td>
+<td>조건 분기, 루프가 많은 워크플로우</td>
+</tr>
+<tr>
+<td><strong>CrewAI</strong></td>
+<td>역할 (Researcher / Writer / Reviewer)</td>
+<td>인간 팀 구조에 가까운 프로세스</td>
+</tr>
+<tr>
+<td><strong>AutoGen</strong></td>
+<td>대화 (agents 끼리 토론)</td>
+<td>합의 도출, 검증 사이클</td>
+</tr>
+</tbody>
+</table>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Tools</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">64 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">트레이드오프</div>
+<h2 class="reveal">분산하면 <em>새 비용</em>이 생긴다</h2>
+<ul class="bullets reveal">
+<li>메시지 전달마다 latency 누적</li>
+<li>컨텍스트 중복 (각 에이전트마다 일부 정보 재전달)</li>
+<li>무한 loop / silent information loss 가능성</li>
+<li>
+                        95%의 경우는 <strong>잘 설계된 단일 에이전트</strong>와
+                        명확한 워크플로우로 충분
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Tradeoffs</span>
+</div>
+</section>
+
+<section class="slide takeaway-slide">
+<div class="slide-number">65 / 96</div>
+<div class="takeaway-card reveal">
+<div class="takeaway-label">Section 05 · Takeaway</div>
+<div class="takeaway-text">
+                    분산은 새로운 종류의<br/>복잡도를 만든다.
+                </div>
+<div class="takeaway-note">
+                    multi-agent로 가야 하는 케이스는 드물고, 갈 때는 의도적으로
+                    가야 한다. 멋있어 보여서 가는 게 아니라, 단일 에이전트가
+                    해결할 수 없는 문제일 때만.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 05</span><span class="dot">●</span><span>Takeaway</span>
+</div>
+</section>
+
+<!-- ========================================================= -->
+<!-- SECTION 6 — Orchestration -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+<div class="slide-number">66 / 96</div>
+<div class="num reveal">0<em>6</em></div>
+<div class="section-name reveal">Workflow Orchestration</div>
+<div class="section-sub reveal">
+                살아남는 인프라 — 에이전트는 살아남기 위해 설계되어야 한다.
+            </div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Orchestration</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">67 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">긴 작업의 현실</div>
+<h2 class="reveal">
+                    에이전트가 도는 동안 <em>인프라가 죽는다</em>
+</h2>
+<ul class="bullets reveal">
+<li>한 작업이 5분, 10분 걸리는 게 흔함</li>
+<li>서버리스 함수의 타임아웃 (보통 몇 분)</li>
+<li>
+                        외부 API의 일시적 실패, 프로세스 크래시, 인스턴스 교체
+                    </li>
+<li>
+                        결과: 작업 중간에 죽음 → 처음부터 다시 →
+                        <strong>같은 일을 두 번</strong> (비용 + 시간)
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Problem</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">68 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">핵심 개념</div>
+<h2 class="reveal"><em>Durable Execution</em></h2>
+<ul class="bullets reveal">
+<li>매 단계마다 <strong>체크포인트</strong> 저장</li>
+<li>죽으면 — 죽기 직전 단계부터 재개 (replay)</li>
+<li>장점: 인프라 장애에 면역</li>
+<li>며칠 걸리는 워크플로우도 안전하게 돌릴 수 있음</li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Concept</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">69 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">5대 요건</div>
+<h2 class="reveal">durability를 <em>보장하는 코드</em></h2>
+<ul class="bullets dense reveal">
+<li>
+<strong>State persistence</strong> — 매 단계 후 상태를
+                        저장
+                    </li>
+<li>
+<strong>Retry</strong> — 외부 API 실패 시 자동 재시도
+                        (backoff 정책 포함)
+                    </li>
+<li>
+<strong>Idempotency</strong> — 한 단계가 두 번 실행돼도
+                        결과가 같아야 함
+                    </li>
+<li>
+<strong>Timeout</strong> — 단계별, 워크플로우 전체별
+                        시간 제한
+                    </li>
+<li>
+<strong>Determinism</strong> — replay 시 같은 경로를
+                        따라야 함 (가장 트리키)
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Requirements</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">70 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Determinism</div>
+<h2 class="reveal">
+                    replay에 <em>안전한 코드</em>를 쓴다는 것
+                </h2>
+<ul class="bullets reveal">
+<li>
+                        비결정적 연산을 분기 로직에 직접 사용 X —
+                        <code class="code-token">Date.now()</code>,
+                        <code class="code-token">Math.random()</code>
+</li>
+<li>
+                        해법: 시간/난수도 <strong>"기록된 외부 효과"</strong>로
+                        다룸 — 첫 실행 시 기록, replay 시 그 값 재사용
+                    </li>
+<li>
+                        이 발상이 함수형 프로그래밍의 "side effect를
+                        명시적으로"와 정확히 같은 패턴
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Determinism</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">71 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">도구</div>
+<h2 class="reveal">Temporal <em>·</em> Inngest</h2>
+<ul class="bullets reveal">
+<li>
+<strong>Temporal</strong> — 코드로 워크플로우를 작성,
+                        durability 내장. 가장 성숙. Netflix가 cloud operations에
+                        사용
+                    </li>
+<li>
+<strong>Inngest</strong> — "unbreakable workflows"
+                        슬로건, 같은 개념을 더 가벼운 DX로 제공
+                    </li>
+<li>
+                        둘 다 같은 본질: 함수를 작성하면, 인프라가 그 함수의
+                        durable 실행을 보장
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Tools</span>
+</div>
+</section>
+
+<section class="slide takeaway-slide">
+<div class="slide-number">72 / 96</div>
+<div class="takeaway-card reveal">
+<div class="takeaway-label">Section 06 · Takeaway</div>
+<div class="takeaway-text">
+                    에이전트는 살아남기 위해<br/>설계되어야 한다.
+                </div>
+<div class="takeaway-note">
+                    "잘 동작한다"가 아니라 "도중에 죽어도 이어서 돌 수 있다"가
+                    production의 기본 요건이다. durability는 사후에 추가하는 게
+                    아니라, 처음부터 코드의 형태에 영향을 미친다.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 06</span><span class="dot">●</span><span>Takeaway</span>
+</div>
+</section>
+
+        <!-- ========================================================= -->
+        <!-- SECTION 7 — Cost Structure -->
+        <!-- ========================================================= -->
+        <section class="slide section-divider">
+            <div class="slide-number">73 / 96</div>
+            <div class="num reveal">0<em>7</em></div>
+            <div class="section-name reveal">Cost Structure</div>
+            <div class="section-sub reveal">
+                좋은 모델을 쓰면 잘 된다. 문제는 production traffic이 붙는
+                순간, 청구서가 intelligence가 아니라 tokens × calls × output으로
+                온다는 점이다.
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Cost</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">74 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">처음엔 자연스럽다</div>
+                <h2 class="reveal">좋은 모델을 쓰면 <em>당연히 잘 된다</em></h2>
+                <ul class="bullets reveal">
+                    <li>frontier model로 시작하면 품질이 좋고, 실패가 적고, 데모가 잘 된다</li>
+                    <li>특히 agent는 planning, tool use, judge까지 모델 능력에 기대는 부분이 많다</li>
+                    <li>그래서 초기 구현에서는 “일단 제일 좋은 모델”이 가장 빠른 선택처럼 보임</li>
+                    <li>
+                        그런데 production traffic이 붙는 순간 질문이 바뀐다 —
+                        <strong>“잘 되나?”에서 “한 번 성공하는 데 얼마인가?”</strong>
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Bill Shock</span>
+            </div>
+        </section>
+
+        <section class="slide table-slide">
+            <div class="slide-number">75 / 96</div>
+            <div class="eyebrow reveal eyebrow-spaced">Model Price</div>
+            <h2 class="reveal table-slide-heading">
+                모델 선택은 곧 <em class="accent-em">단가 선택</em>이다
+            </h2>
+            <table class="reveal">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Input / 1M</th>
+                        <th>Cached input / 1M</th>
+                        <th>Output / 1M</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>gpt-5.5-pro</strong></td>
+                        <td>$30.00</td>
+                        <td>-</td>
+                        <td><strong>$180.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>gpt-5.5</strong></td>
+                        <td>$5.00</td>
+                        <td>$0.50</td>
+                        <td>$30.00</td>
+                    </tr>
+                    <tr>
+                        <td><strong>gpt-5.4</strong></td>
+                        <td>$2.50</td>
+                        <td>$0.25</td>
+                        <td>$15.00</td>
+                    </tr>
+                    <tr>
+                        <td><strong>gpt-5.4-mini</strong></td>
+                        <td>$0.75</td>
+                        <td>$0.075</td>
+                        <td>$4.50</td>
+                    </tr>
+                    <tr>
+                        <td><strong>gpt-5.4-nano</strong></td>
+                        <td>$0.20</td>
+                        <td>$0.02</td>
+                        <td>$1.25</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="reveal table-caption-note">
+                Standard · short context 기준. output token은 input보다 훨씬 비싸고,
+                gpt-5.5-pro output은 gpt-5.4-mini의 40배, nano의 144배다.
+            </p>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Price</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">76 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">Token 감각</div>
+                <h2 class="reveal"><em>1M tokens</em>는 생각보다 금방 쌓인다</h2>
+                <ul class="bullets reveal">
+                    <li><strong>1,000 tokens × 1,000 calls</strong> = 1M tokens</li>
+                    <li><strong>10,000 tokens × 100 calls</strong> = 1M tokens</li>
+                    <li><strong>100,000 tokens × 10 calls</strong> = 1M tokens</li>
+                    <li>RAG context, tool result, conversation history가 붙으면 한 call이 10K tokens를 넘기 쉽다</li>
+                    <li>
+                        agent가 사용자 요청 하나에서 LLM을 5번 부르면,
+                        1,000명 요청이 아니라 <strong>200명 요청만으로도</strong> 1M-call 규모에 가까워진다
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Token Sense</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">77 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">Agent Cost</div>
+                <h2 class="reveal">Agent 비용은 단일 호출이 아니라 <em>loop 비용</em>이다</h2>
+                <ul class="bullets reveal">
+                    <li>planning call — 무엇을 할지 정함</li>
+                    <li>tool call 후 observation — 결과를 다시 context에 넣음</li>
+                    <li>retry / reflection — 실패하면 다시 생각함</li>
+                    <li>judge / eval / guardrail — 품질과 안전을 확인함</li>
+                    <li>
+                        그래서 비용은 <strong>모델 단가 × token</strong>이 아니라
+                        <strong>Σ(각 단계의 모델 단가 × input/output token)</strong>
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Loop Cost</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">78 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">Unit Economics</div>
+                <h2 class="reveal">요청 단가보다 <em>성공 작업 단가</em>를 본다</h2>
+                <ul class="bullets reveal">
+                    <li><strong>Cost / request</strong> — 기본 지표지만 실패와 재시도를 숨김</li>
+                    <li><strong>Cost / successful task</strong> — 실제로 성공한 업무 1건의 원가</li>
+                    <li><strong>LLM calls / request</strong> — 평균보다 p95가 중요</li>
+                    <li><strong>Tokens by stage</strong> — planning, tool, judge, guardrail 중 어디가 큰지</li>
+                    <li><strong>Cost by tenant / feature / endpoint</strong> — 누가, 어떤 기능에서 쓰는지</li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Metrics</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">79 / 96</div>
+            <div class="slide-content slide-content-wide">
+                <div class="eyebrow reveal">Control Levers</div>
+                <h2 class="reveal">비용은 <em>작은 제어 장치들</em>로 잡는다</h2>
+                <div class="two-col reveal">
+                    <div>
+                        <h3>덜 쓰게 만들기</h3>
+                        <ul>
+                            <li>context cap / history pruning</li>
+                            <li>RAG chunk 수 제한</li>
+                            <li>tool result를 필요한 필드만 전달</li>
+                            <li>max step, retry budget, timeout</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>정책으로 운영하기</h3>
+                        <ul>
+                            <li>endpoint / task / tenant tier별 기본 모델</li>
+                            <li>max tokens, output length, rate limit</li>
+                            <li>budget alert, quota, kill switch</li>
+                            <li>policy id와 model을 로그에 남김</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Controls</span>
+            </div>
+        </section>
+
+        <section class="slide takeaway-slide">
+            <div class="slide-number">80 / 96</div>
+            <div class="takeaway-card reveal">
+                <div class="takeaway-label">Section 07 · Takeaway</div>
+                <div class="takeaway-text">
+                    비용 관리는<br />모델을 고르는 문제가 아니라<br /><em>원가 구조를 운영하는 문제</em>다.
+                </div>
+                <div class="takeaway-note">
+                    좋은 모델은 좋은 출발점이다. 하지만 production에서는 요청 하나가
+                    몇 번의 call, 몇 tokens, 어떤 output으로 증폭되는지 측정하고,
+                    예산·한도·정책으로 제어해야 한다. routing과 cascade는 그 다음의
+                    선택지다.
+                </div>
+            </div>
+            <div class="slide-footer">
+                <span>Section 07</span><span class="dot">●</span
+                ><span>Takeaway</span>
+            </div>
+        </section>
+
+<!-- ========================================================= -->
+<!-- SECTION 8 — Guardrails (KISA 절정) -->
+<!-- ========================================================= -->
+<section class="slide section-divider">
+<div class="slide-number">81 / 96</div>
+<div class="num reveal">0<em>8</em></div>
+<div class="section-name reveal">Guardrails</div>
+<div class="section-sub reveal">
+                안전한 운영과 Prompt Injection 대응 — 다층 방어로 production
+                에이전트를 보호한다.
+            </div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Guardrails</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">82 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">두 가지 본질적 위협</div>
+<h2 class="reveal">
+                    에이전트가 <em>production에서</em> 가는 길
+                </h2>
+<ul class="bullets reveal">
+<li>
+<strong>위협 1 — 확률적 출력</strong> — 같은 입력에도
+                        다른 출력. 일부는 부적절하거나 위험
+                    </li>
+<li>
+<strong>위협 2 — Prompt Injection</strong> — 사용자
+                        입력에 악의적 지시를 숨겨 모델 행동을 hijack
+                    </li>
+<li>
+                        SQL injection과 비슷, 단 자연어에서는 "코드"와
+                        "데이터"의 경계가 흐림
+                    </li>
+<li>
+                        직접 주입(direct) + 간접 주입(indirect, 검색된 문서 등에
+                        숨김)
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Threats</span>
+</div>
+</section>
+<section class="slide takeaway-slide">
+<div class="slide-number">83 / 96</div>
+<div class="takeaway-card reveal">
+<div class="takeaway-label">OWASP LLM Top 10</div>
+<div class="takeaway-text">
+                    Prompt Injection<br/>=
+                    <em class="plain-em">1위</em>, 2년 연속.
+                </div>
+<div class="takeaway-note">
+                    2024년과 2025년 OWASP LLM Top 10에서 모두 가장 심각한
+                    위협으로 지목됐다. 자연어 입력의 본질상 완전한 차단이 불가능
+                    — 그래서 다층 방어가 필요하다.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>OWASP</span>
+</div>
+</section>
+<section class="slide quote-slide">
+<div class="slide-number">84 / 96</div>
+<blockquote class="reveal">
+                모든 layer는 구멍이 있다.<br/>충분히 쌓아야
+                <em class="accent-em">구멍이 일치하지 않는다</em>.
+            </blockquote>
+<cite class="reveal">— Swiss Cheese 모델</cite>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Mental Model</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">85 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">5계층 방어</div>
+<h2 class="reveal">Defense in Depth, <em>LLM 버전</em></h2>
+<div class="layer-stack reveal">
+<div class="layer">
+<span class="layer-num">L1</span>Input<span class="layer-tag">content safety · jailbreak · PII</span>
+</div>
+<div class="layer">
+<span class="layer-num">L2</span>Model / Retrieval<span class="layer-tag">context filter · tool 제한</span>
+</div>
+<div class="layer">
+<span class="layer-num">L3</span>Output<span class="layer-tag">hallucination · structured validation</span>
+</div>
+<div class="layer">
+<span class="layer-num">L4</span>API<span class="layer-tag">rate limit · auth · ACL</span>
+</div>
+<div class="layer">
+<span class="layer-num">L5</span>Runtime<span class="layer-tag">sandbox · resource · monitoring</span>
+</div>
+</div>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>5 Layers</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">86 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">각 layer의 책임</div>
+<h2 class="reveal">
+                    layer가 <em>막는 것</em>과 <em>못 막는 것</em>
+</h2>
+<ul class="bullets dense reveal">
+<li>
+<strong>Input</strong> — 사용자 입력에서 명백한
+                        jailbreak / PII 차단. 단, 우회 가능
+                    </li>
+<li>
+<strong>Model/Retrieval</strong> — 모델이 보는
+                        컨텍스트를 정제. 검색된 문서의 indirect injection 차단
+                    </li>
+<li>
+<strong>Output</strong> — 모델이 생성한 응답을 검증.
+                        structured output 강제, hallucination 검출
+                    </li>
+<li>
+<strong>API</strong> — 요청 자체의 abuse 차단. rate
+                        limit, IP 제한, auth
+                    </li>
+<li>
+<strong>Runtime</strong> — tool이 실행되는 환경.
+                        sandboxing, file system / network 격리
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Layer Detail</span>
+</div>
+</section>
+<section class="slide takeaway-slide">
+<div class="slide-number">87 / 96</div>
+<div class="takeaway-card reveal outline-takeaway-card">
+<div class="takeaway-label text-accent">
+                    외부 통제 · 최소 권한
+                </div>
+<div class="takeaway-text text-primary">
+                    가드레일은
+                    <em class="accent-em">LLM 외부에</em>
+                    존재해야 한다.
+                </div>
+<div class="takeaway-note text-secondary">
+                    "악의적 행동을 하지 마"라고 모델에게 지시하는 건 가드레일이
+                    아니다. 지시를 따르는 모델은
+                    <strong class="text-primary">그 지시를 무시하라는 지시</strong>도 따를 수 있다. 진짜 통제는 모델 바깥에서 tool 실행 권한을
+                    제한하는 것 — 최소 권한 원칙을 LLM 시스템에 적용한다.
+                </div>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Least Privilege</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">88 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Trade-off</div>
+<h2 class="reveal">99% 차단 <em>+</em> 19.6% false positive</h2>
+<ul class="bullets reveal">
+<li>한 가드레일 벤치마크 결과: 99%의 유해 콘텐츠 차단</li>
+<li>
+                        그러나 동시에 19.6%의 정상 요청도 오탐 (false positive)
+                    </li>
+<li>안전성 ↑ 사용성 ↓ — 실제 운영에선 균형점이 다름</li>
+<li>목표는 "최대 안전"이 아니라 "use case에 맞는 균형"</li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Tradeoff</span>
+</div>
+</section>
+<section class="slide content-slide">
+<div class="slide-number">89 / 96</div>
+<div class="slide-content">
+<div class="eyebrow reveal">Demo · 실습 미리보기</div>
+<h2 class="reveal">오후엔 직접 <em>방어 layer를 쌓는다</em></h2>
+<ul class="bullets reveal">
+<li>Day 1 에이전트에 5계층 가드레일 적용</li>
+<li>
+                        Synthetic prompt injection 입력 → 어느 layer가
+                        차단하는지 확인 → 우회 케이스 보강
+                    </li>
+<li>각 입력이 어느 layer에서 막혔는지 trace로 검증</li>
+<li>
+                        실제 production 운영의 보호 layer를 직접 쌓아보는 시간
+                    </li>
+</ul>
+</div>
+<div class="slide-footer">
+<span>Section 08</span><span class="dot">●</span><span>Practice Preview</span>
+</div>
+</section>
+
+
+        <!-- ========================================================= -->
+        <!-- SECTION 10 — 정리 -->
+        <!-- ========================================================= -->
+        <section class="slide section-divider">
+            <div class="slide-number">90 / 96</div>
+            <div class="num reveal">0<em>9</em></div>
+            <div class="section-name reveal">정리</div>
+            <div class="section-sub reveal">
+                2026년 봄 시점의 layer 지도, 그리고 백엔드 직군 진로의 의미.
+            </div>
+            <div class="slide-footer">
+                <span>Section 09</span><span class="dot">●</span
+                ><span>Wrap up</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">91 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">2026.05 · 풍경</div>
+                <h2 class="reveal">8시간의 <em>layer 지도</em></h2>
+                <div class="layer-stack reveal">
+                    <div class="layer highlight">
+                        <span class="layer-num">⌬</span>Guardrails
+                        (5-layer)<span class="layer-tag">보안</span>
+                    </div>
+                    <div class="layer">
+                        <span class="layer-num">$</span>Cost Structure<span class="layer-tag">비용</span
+                        >
+                    </div>
+                    <div class="layer">
+                        <span class="layer-num">⫶</span>Multi-Agent +
+                        Orchestration<span class="layer-tag"
+                            >분산 · 신뢰성</span
+                        >
+                    </div>
+                    <div class="layer">
+                        <span class="layer-num">◎</span>Observability +
+                        Evaluation<span class="layer-tag">가시성 · 품질</span>
+                    </div>
+                    <div class="layer">
+                        <span class="layer-num">▸</span>LLM + Planning + Memory
+                        + Tools<span class="layer-tag">기본 구성</span>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer">
+                <span>Section 09</span><span class="dot">●</span
+                ><span>Map</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">92 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">백엔드 직군 진로 관점</div>
+                <h2 class="reveal">이 layer들은 <em>곧 모든 회사로</em></h2>
+                <ul class="bullets reveal">
+                    <li>이미 일반 기업 production으로 빠르게 확산되는 단계</li>
+                    <li><strong>Observability</strong> — 기존 APM 경험 직결</li>
+                    <li>
+                        <strong>Orchestration</strong> — 분산 시스템 / 트랜잭션
+                        경험 직결
+                    </li>
+                    <li>
+                        <strong>Cost Structure</strong> — capacity planning /
+                        budget enforcement 직결
+                    </li>
+                    <li>
+                        <strong>Guardrails</strong> — 기존 보안 / WAF / DLP 경험
+                        직결
+                    </li>
+                    <li>
+                        신입 입장에서
+                        <strong>하나라도 깊게 다뤄본 경험</strong>은 큰 차별화
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 09</span><span class="dot">●</span
+                ><span>Career</span>
+            </div>
+        </section>
+
+        <section class="slide content-slide">
+            <div class="slide-number">93 / 96</div>
+            <div class="slide-content">
+                <div class="eyebrow reveal">분야의 특성</div>
+                <h2 class="reveal">1~2년 단위로 <em>풍경이 바뀐다</em></h2>
+                <ul class="bullets reveal">
+                    <li>
+                        2024년의 모범사례 ≠ 2025년의 모범사례 ≠ 2026년의
+                        모범사례
+                    </li>
+                    <li>
+                        그러나 <strong>기본 layer 구조는 안정화 중</strong> — 새
+                        도구가 나와도 이 layer 어딘가에 매핑됨
+                    </li>
+                    <li>오늘 그린 지도는 출발점</li>
+                    <li>
+                        각 layer의 한 시간 분량 강의가 한 주제씩 더 깊게 들어갈
+                        수 있는 영역
+                    </li>
+                </ul>
+            </div>
+            <div class="slide-footer">
+                <span>Section 09</span><span class="dot">●</span
+                ><span>Pace</span>
+            </div>
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- DAY 2 PRACTICE -->
+        <!-- ========================================================= -->
+        <section class="slide practice-slide">
+            <div class="slide-number">94 / 96</div>
+            <div class="eyebrow reveal">Day 2 · 실습</div>
+            <h2 class="reveal">에이전트를 <em>다층으로 보호한다</em></h2>
+            <p class="reveal practice-intro">
+                Day 1 에이전트에 cost 제어 장치를 추가하고, input/output 가드레일을
+                쌓는다. synthetic prompt injection 입력으로 어느 layer가
+                막아내는지 trace로 검증한다.
+            </p>
+            <div class="slide-footer">
+                <span>Practice</span><span class="dot">●</span
+                ><span>Day 2</span>
+            </div>
+        </section>
+
+        <section class="slide practice-slide">
+            <div class="slide-number">95 / 96</div>
+            <div class="eyebrow reveal">5단계 흐름</div>
+            <h2 class="reveal">
+                측정 <em>→</em> 제어 <em>→</em> 차단 <em>→</em> 재검증
+            </h2>
+            <div class="practice-grid reveal">
+                <span class="step-num">01</span
+                ><span class="step-text"
+                    >Day 1 repo 이어받기 + cost 측정 (token by stage trace)</span
+                ><span class="step-time">10분</span>
+                <span class="step-num">02</span
+                ><span class="step-text"
+                    >Cost controls 적용 — budget · max step · context cap</span
+                ><span class="step-time">10분</span>
+                <span class="step-num">03</span
+                ><span class="step-text"
+                    >5계층 중 input/output 가드레일 구현</span
+                ><span class="step-time">15분</span>
+                <span class="step-num">04</span
+                ><span class="step-text"
+                    >Synthetic prompt injection 입력 → trace로 차단 layer
+                    확인</span
+                ><span class="step-time">15분</span>
+                <span class="step-num">05</span
+                ><span class="step-text"
+                    >우회 케이스 추가 → 보강 → 재검증 + Q&amp;A</span
+                ><span class="step-time">10분</span>
+            </div>
+            <div class="slide-footer">
+                <span>Practice</span><span class="dot">●</span
+                ><span>Day 2 · Steps</span>
+            </div>
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- CLOSING -->
+        <!-- ========================================================= -->
+        <section class="slide title-slide">
+            <div class="slide-number">96 / 96</div>
+            <div class="geo"></div>
+            <div class="dot-shape"></div>
+            <div class="eyebrow reveal">End · 2026.05</div>
+            <h1 class="reveal">
+                production은<br />한 번에 만들어지지 않고<br /><em
+                    >layer로 쌓인다.</em
+                >
+            </h1>
+            <p class="lead reveal">
+                단일 에이전트를 만들고, 가시성을 더하고, 품질을 측정하고,
+                분산하고, 비용을 관리하고, 보안으로 감쌌다. 새 기술이 나와도 이
+                순서는 비슷할 것이다.
+            </p>
+            <div class="meta-row reveal">
+                <div><span>강의자</span>—</div>
+                <div><span>자료</span>presentation.html</div>
+                <div><span>문의</span>오늘 이 자리에서</div>
+            </div>
+        </section>
+        </main>
+
+        <script>
+/* =========================================================
+SLIDE PRESENTATION CONTROLLER
+- Intersection Observer for entry animations
+- Keyboard, touch, wheel navigation
+- Progress bar
+========================================================= */
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll(".slide");
+        this.progressBar = document.querySelector(".progress-bar");
+        this.currentIndex = 0;
+        this.SLIDE_QUERY_KEY = "slide";
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupProgressBar();
+        this.restoreSlideFromUrl();
+    }
+
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.intersectionRatio > 0.5) {
+                        entry.target.classList.add("visible");
+                        this.currentIndex = Array.from(
+                            this.slides,
+                        ).indexOf(entry.target);
+                        this.updateUrlForSlide(this.currentIndex);
+                    }
+                });
+            },
+            { threshold: [0.5] },
+        );
+        this.slides.forEach((slide) => observer.observe(slide));
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener("keydown", (e) => {
+            // Skip when editing text
+            if (
+                e.target.getAttribute &&
+                e.target.getAttribute("contenteditable")
+            )
+                return;
+            if (
+                e.key === "ArrowDown" ||
+                e.key === "PageDown" ||
+                e.key === " " ||
+                e.key === "ArrowRight"
+            ) {
+                e.preventDefault();
+                this.goTo(this.currentIndex + 1);
+            } else if (
+                e.key === "ArrowUp" ||
+                e.key === "PageUp" ||
+                e.key === "ArrowLeft"
+            ) {
+                e.preventDefault();
+                this.goTo(this.currentIndex - 1);
+            } else if (e.key === "Home") {
+                e.preventDefault();
+                this.goTo(0);
+            } else if (e.key === "End") {
+                e.preventDefault();
+                this.goTo(this.slides.length - 1);
+            }
+        });
+    }
+
+    setupTouchNav() {
+        let touchStartY = 0;
+        document.addEventListener(
+            "touchstart",
+            (e) => {
+                touchStartY = e.touches[0].clientY;
+            },
+            { passive: true },
+        );
+        document.addEventListener(
+            "touchend",
+            (e) => {
+                const dy =
+                    touchStartY - e.changedTouches[0].clientY;
+                if (Math.abs(dy) < 50) return;
+                this.goTo(this.currentIndex + (dy > 0 ? 1 : -1));
+            },
+            { passive: true },
+        );
+    }
+
+    setupProgressBar() {
+        if (!this.progressBar) return;
+
+        document.addEventListener(
+            "scroll",
+            () => {
+                const scrollHeight =
+                    document.documentElement.scrollHeight -
+                    window.innerHeight;
+                const progress =
+                    scrollHeight <= 0
+                        ? 100
+                        : (window.scrollY / scrollHeight) * 100;
+                this.progressBar.style.width = `${progress}%`;
+            },
+            { passive: true },
+        );
+    }
+
+    goTo(index) {
+        if (index < 0 || index >= this.slides.length) return;
+        this.slides[index].scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+        });
+        this.currentIndex = index;
+        this.updateUrlForSlide(index);
+    }
+
+    restoreSlideFromUrl() {
+        const slideFromUrl = new URLSearchParams(window.location.search).get(
+            this.SLIDE_QUERY_KEY,
+        );
+        const slideNumber = Number.parseInt(slideFromUrl, 10);
+
+        if (
+            Number.isInteger(slideNumber) &&
+            slideNumber >= 1 &&
+            slideNumber <= this.slides.length
+        ) {
+            const index = slideNumber - 1;
+            requestAnimationFrame(() => {
+                this.slides[index].scrollIntoView({
+                    behavior: "auto",
+                    block: "start",
+                });
+                this.currentIndex = index;
+                this.updateUrlForSlide(index);
+            });
+            return;
+        }
+
+        this.updateUrlForSlide(this.currentIndex);
+    }
+
+    updateUrlForSlide(index) {
+        const slideNumber = index + 1;
+        const url = new URL(window.location.href);
+
+        if (url.searchParams.get(this.SLIDE_QUERY_KEY) === String(slideNumber))
+            return;
+
+        url.searchParams.set(this.SLIDE_QUERY_KEY, String(slideNumber));
+        window.history.replaceState(null, "", url.toString());
+    }
+}
+
+/* =========================================================
+INLINE EDITOR — opt-in (user chose Yes)
+- Hover top-left corner OR press E to enter edit mode
+- Click any text to edit, Ctrl+S to save (download HTML)
+- Auto-save to localStorage
+========================================================= */
+class InlineEditor {
+    constructor() {
+        this.isActive = false;
+        this.toggle = document.getElementById("editToggle");
+        this.banner = document.getElementById("editBanner");
+        this.hotzone = document.querySelector(".edit-hotzone");
+        this.hideTimeout = null;
+        this.STORAGE_KEY = "kisa-presentation-edits-v1";
+
+        this.bindHotzoneHover();
+        this.bindToggleClick();
+        this.bindKeyboard();
+        this.loadFromStorage();
+    }
+
+    bindHotzoneHover() {
+        this.hotzone.addEventListener("mouseenter", () => {
+            clearTimeout(this.hideTimeout);
+            this.toggle.classList.add("show");
+        });
+        this.hotzone.addEventListener("mouseleave", () => {
+            this.hideTimeout = setTimeout(() => {
+                if (!this.isActive)
+                    this.toggle.classList.remove("show");
+            }, 400);
+        });
+        this.toggle.addEventListener("mouseenter", () =>
+            clearTimeout(this.hideTimeout),
+        );
+        this.toggle.addEventListener("mouseleave", () => {
+            this.hideTimeout = setTimeout(() => {
+                if (!this.isActive)
+                    this.toggle.classList.remove("show");
+            }, 400);
+        });
+        this.hotzone.addEventListener("click", () =>
+            this.toggleEditMode(),
+        );
+    }
+
+    bindToggleClick() {
+        this.toggle.addEventListener("click", () =>
+            this.toggleEditMode(),
+        );
+    }
+
+    bindKeyboard() {
+        document.addEventListener("keydown", (e) => {
+            const target = e.target;
+            const isEditingField =
+                target.getAttribute &&
+                target.getAttribute("contenteditable");
+            if (
+                (e.key === "e" || e.key === "E") &&
+                !isEditingField &&
+                !e.ctrlKey &&
+                !e.metaKey
+            ) {
+                this.toggleEditMode();
+            }
+            if (
+                (e.ctrlKey || e.metaKey) &&
+                e.key === "s" &&
+                this.isActive
+            ) {
+                e.preventDefault();
+                this.exportFile();
+            }
+        });
+        // Save on edit
+        document.addEventListener("input", (e) => {
+            if (
+                e.target.getAttribute &&
+                e.target.getAttribute("contenteditable")
+            ) {
+                this.saveToStorage();
+            }
+        });
+    }
+
+    toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle(
+            "edit-active",
+            this.isActive,
+        );
+        this.toggle.classList.toggle("active", this.isActive);
+        this.banner.classList.toggle("active", this.isActive);
+        const editableTags = [
+            "H1",
+            "H2",
+            "H3",
+            "P",
+            "LI",
+            "BLOCKQUOTE",
+            "CITE",
+            "SPAN",
+            "DIV",
+            "TD",
+            "TH",
+        ];
+        document
+            .querySelectorAll(editableTags.join(","))
+            .forEach((el) => {
+                // Skip elements inside .edit-toggle, .edit-banner, code blocks
+                if (
+                    el.closest(
+                        ".edit-toggle, .edit-banner, pre, .progress-bar, .edit-hotzone",
+                    )
+                )
+                    return;
+                // Skip elements with children that are also editable (only leaves)
+                if (
+                    Array.from(el.children).some((c) =>
+                        editableTags.includes(c.tagName),
+                    )
+                )
+                    return;
+                if (this.isActive) {
+                    el.setAttribute("contenteditable", "true");
+                } else {
+                    el.removeAttribute("contenteditable");
+                }
+            });
+    }
+
+    saveToStorage() {
+        const edits = {};
+        document
+            .querySelectorAll('[contenteditable="true"]')
+            .forEach((el, idx) => {
+                edits[idx] = el.innerHTML;
+            });
+        try {
+            localStorage.setItem(
+                this.STORAGE_KEY,
+                JSON.stringify(edits),
+            );
+        } catch (e) {
+            console.warn("localStorage save failed", e);
+        }
+    }
+
+    loadFromStorage() {
+        // Only restore if user re-enters edit mode — keeps file viewable as published
+        // Edits are surfaced when E is pressed
+    }
+
+    exportFile() {
+        // Strip edit state before capturing outerHTML
+        const editableEls = Array.from(
+            document.querySelectorAll("[contenteditable]"),
+        );
+        editableEls.forEach((el) =>
+            el.removeAttribute("contenteditable"),
+        );
+        document.body.classList.remove("edit-active");
+        this.toggle.classList.remove("active", "show");
+        this.banner.classList.remove("active");
+
+        const html =
+            "<!DOCTYPE html>\n" +
+            document.documentElement.outerHTML;
+
+        // Restore edit state so the user can keep editing
+        document.body.classList.add("edit-active");
+        editableEls.forEach((el) =>
+            el.setAttribute("contenteditable", "true"),
+        );
+        this.toggle.classList.add("active");
+        this.banner.classList.add("active");
+
+        const blob = new Blob([html], { type: "text/html" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "presentation.html";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+}
+
+function bootPresentation() {
+    if (!document.querySelector(".slide")) return;
+
+    const presentation = new SlidePresentation();
+    const editor = new InlineEditor();
+
+    // Keep controller/editor reachable from DevTools without polluting startup flow.
+    window.presentation = presentation;
+    window.presentationEditor = editor;
+
+    // Make first slide visible immediately for entry animation.
+    document.querySelector(".slide")?.classList.add("visible");
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootPresentation);
+} else {
+    bootPresentation();
+}
+        </script>
+    </body>
+</html>
