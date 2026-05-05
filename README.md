@@ -15,19 +15,38 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 
 ## 사전 준비
 
-### A) GitHub Codespaces (권장)
+### A) GitHub Codespaces (권장 · 로컬 설치 불필요)
 
-1. 강의자가 안내하는 repo url에서 우상단 **Code → Codespaces → Create codespace on main** 클릭
-2. 컨테이너 부팅 (~30초). VS Code가 브라우저에 열림
-3. `pip install`은 컨테이너 빌드 시점에 자동 완료. 추가 설치 불필요
+필요한 것: **GitHub 계정 + 브라우저 + 인터넷**. 그게 다.
 
-### B) 로컬 (백업)
+1. 이 repo에서 우상단 **Code → Codespaces → Create codespace on main** 클릭
+2. 컨테이너 부팅 (~30초). 브라우저 안에서 VS Code가 열림
+3. `pip install`은 컨테이너 빌드 시점에 자동 완료. Python·git 등 모든 환경이 사전 설치됨
+
+### B) 로컬 (백업 — Codespaces 못 쓰는 경우만)
+
+#### 1) 사전 도구 확인
 
 ```bash
-git clone <repo-url>
-cd practice/day1
-python3.11 -m venv .venv
-source .venv/bin/activate    # Windows: .venv\Scripts\activate
+python3 --version   # Python 3.10 이상이 나와야 함
+git --version       # git 설치 여부 확인
+```
+
+설치 안 되어 있다면:
+
+| OS | Python | git |
+|----|--------|-----|
+| macOS | `brew install python@3.11` | `xcode-select --install` 또는 `brew install git` |
+| Windows | [python.org/downloads](https://www.python.org/downloads/) — *Add Python to PATH* 체크 필수 | [git-scm.com/download/win](https://git-scm.com/download/win) |
+| Linux | `sudo apt install python3.11 python3.11-venv` | `sudo apt install git` |
+
+#### 2) repo clone + 가상환경 + 의존성
+
+```bash
+git clone https://github.com/ne2030/kisa-ai-agent-practice.git
+cd kisa-ai-agent-practice
+python3 -m venv .venv
+source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
