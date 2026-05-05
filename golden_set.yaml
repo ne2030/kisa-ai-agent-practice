@@ -1,0 +1,50 @@
+# Golden Dataset — 5개의 hard sample.
+#
+# 각 entry:
+#   id: 식별자
+#   input: 사용자 질문
+#   expected:
+#     must_call_tools: 반드시 호출돼야 할 tool 이름 (없으면 [])
+#     must_mention:    답변에 반드시 포함돼야 하는 표현
+#     must_not_say:    답변에 절대 나오지 말아야 하는 표현 (hallucination 방지 등)
+#   notes: 사람용 설명
+
+- id: edge-001
+  input: production logs를 분석해서 가장 자주 발생한 에러 패턴 알려줘
+  expected:
+    must_call_tools: ["search_db"]
+    must_mention: ["TimeoutError", "ConnectionRefused"]
+    must_not_say: []
+  notes: 기본 시나리오 — search_db로 error patterns 조회
+
+- id: edge-002
+  input: OAuth refresh token이 만료된 user 수와 user_id 범위를 알려줘
+  expected:
+    must_call_tools: ["search_db"]
+    must_mention: ["12", "u001", "u012"]
+    must_not_say: []
+  notes: oauth mock 데이터 활용 — 정확한 숫자 + 범위 추출
+
+- id: edge-003
+  input: 존재하지 않는 user u999의 로그인 이력을 알려줘
+  expected:
+    must_call_tools: ["search_db"]
+    must_mention: ["없", "확인"]
+    must_not_say: ["u999는 일반적으로", "u999의 활동"]
+  notes: hallucination 방지 — 데이터에 없는 user에 대해 답을 만들어내지 말아야 함
+
+- id: edge-004
+  input: production 상태와 자주 발생하는 에러를 종합 진단해줘
+  expected:
+    must_call_tools: ["search_db"]
+    must_mention: ["latency", "Error"]
+    must_not_say: []
+  notes: 다단계 호출 시나리오 — production logs + error patterns 둘 다 사용
+
+- id: edge-005
+  input: 안녕하세요
+  expected:
+    must_call_tools: []
+    must_mention: []
+    must_not_say: []
+  notes: tool이 필요 없는 인사 — 모델이 search_db를 불필요하게 호출하지 말아야 함
