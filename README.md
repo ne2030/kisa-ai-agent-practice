@@ -8,7 +8,7 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 
 - **agent.py** — Gemini 2.5 Flash 기반 ReAct loop. tool 호출을 직접 검증/실행
 - **trace** — Langfuse `@observe` 데코레이터로 자동 trace 기록
-- **failures/** — 의도적으로 망가진 시나리오 3종, trace로 진단 연습
+- **failures/** — 의도적으로 망가진 시나리오 4종, trace로 진단 연습
 - **evaluate.py** — `golden_set.yaml`의 5개 hard sample을 자동 평가
 
 ---
@@ -146,12 +146,13 @@ get_client().update_current_trace(
 
 ## Step 4 · 의도적 실패 진단 (10~15분)
 
-3개 시나리오를 차례로 돌려서 각자 trace로 진단합니다.
+4개 시나리오를 차례로 돌려서 각자 trace로 진단합니다.
 
 ```bash
-python failures/bad_tool_demo.py
-python failures/infinite_loop_demo.py
-python failures/hallucination_demo.py
+python failures/bad_tool_demo.py          # tool 이름 불일치
+python failures/infinite_loop_demo.py     # 빈 결과 → 무한 재시도
+python failures/hallucination_demo.py     # 빈 데이터에 그럴듯한 답
+python failures/lazy_response_demo.py     # system prompt 부재 → "분석하겠습니다" punt
 ```
 
 각 실행 후:
@@ -160,7 +161,8 @@ python failures/hallucination_demo.py
 3. **1줄 진단** — 어디서 어떻게 깨졌는지 본인 노트에 기록
 
 **옵션 (+):** 1개 fix
-- 셋 중 하나 골라 어떻게 수정해야 동작할지 가설 세우기
+- 4개 중 하나 골라 어떻게 수정해야 동작할지 가설 세우기
+- 특히 `lazy_response_demo`는 한 줄 fix(`SYSTEM_INSTRUCTION` 채우기)가 모델 동작을 어떻게 바꾸는지 직접 비교 가능
 - (실제로 코드를 고쳐 다시 돌려보면 더 좋음)
 
 ---

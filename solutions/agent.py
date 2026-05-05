@@ -13,6 +13,15 @@ from langfuse import get_client, observe
 load_dotenv()
 
 
+SYSTEM_INSTRUCTION = (
+    "당신은 사내 데이터 분석 어시스턴트입니다. "
+    "사용자의 질문을 받으면 필요한 tool을 호출해 데이터를 가져온 뒤, "
+    "그 즉시 데이터를 사용해 분석한 결과를 답변하세요. "
+    "'확인하겠습니다', '분석하겠습니다' 같은 중간 안내 멘트 없이 "
+    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다."
+)
+
+
 # ============================================================
 # 1) 도구 정의
 # ============================================================
@@ -106,6 +115,7 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
     ]
 
     config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION,
         tools=[types.Tool(function_declarations=TOOLS)],
         automatic_function_calling=types.AutomaticFunctionCallingConfig(
             disable=True,
