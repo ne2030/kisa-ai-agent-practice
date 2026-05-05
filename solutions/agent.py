@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from langfuse.decorators import langfuse_context, observe
+from langfuse import get_client, observe
 
 load_dotenv()
 
@@ -91,8 +91,8 @@ HANDLERS = {
 
 @observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
-    # 옵션: trace에 metadata 추가
-    langfuse_context.update_current_trace(
+    # 옵션: trace에 metadata 추가 (v3 — get_client()로 현재 client 핸들 획득)
+    get_client().update_current_trace(
         tags=["day1", "solution"],
     )
 

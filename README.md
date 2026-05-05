@@ -133,7 +133,9 @@ python agent.py
 
 **옵션 (+):** custom metadata
 ```python
-langfuse_context.update_current_trace(
+from langfuse import get_client
+
+get_client().update_current_trace(
     user_id="your_nickname",
     tags=["day1"],
 )
@@ -208,7 +210,7 @@ python evaluate.py
 
 ### Trace가 대시보드에 안 보임
 - 1~2초 지연이 있을 수 있음, 새로고침
-- `langfuse_context` 사용했다면 `flush()` 자동 호출되는지 확인 (스크립트 종료 시점)
+- 스크립트가 즉시 종료되는 환경(serverless 등)에서는 끝에 `get_client().flush()`를 명시적으로 호출
 
 ---
 

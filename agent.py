@@ -16,8 +16,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-# Step 3에서 사용할 Langfuse 데코레이터.
-from langfuse.decorators import langfuse_context, observe  # noqa: F401
+# Step 3에서 사용할 Langfuse 데코레이터 (v3 SDK).
+from langfuse import get_client, observe  # noqa: F401
 
 load_dotenv()
 
@@ -91,7 +91,7 @@ HANDLERS = {
 #
 # 옵션: 데코레이터 안에서 trace metadata 추가
 #   def react_loop(...):
-#       langfuse_context.update_current_trace(
+#       get_client().update_current_trace(
 #           user_id="your_nickname",
 #           tags=["day1"],
 #       )
