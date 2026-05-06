@@ -20,7 +20,7 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 필요한 것: **GitHub 계정 + 브라우저 + 인터넷**. 그게 다.
 
 1. 이 repo에서 우상단 **Code → Codespaces → Create codespace on main** 클릭
-2. 컨테이너 부팅 (~30초). 브라우저 안에서 VS Code가 열림
+2. 컨테이너 부팅 (보통 1~5분). 브라우저 안에서 VS Code가 열림
 3. `pip install`은 컨테이너 빌드 시점에 자동 완료. Python·git 등 모든 환경이 사전 설치됨
 
 ### B) 로컬 (백업 — Codespaces 못 쓰는 경우만)
@@ -92,7 +92,8 @@ python check_env.py
 python agent.py
 ```
 
-샘플 질문에 대해 모델이 `search_db`를 호출하는 trace를 확인합니다.
+샘플 질문에 대해 터미널에서 모델이 `search_db`를 호출하는 흐름을 확인합니다.
+Langfuse의 nested trace 확인은 Step 3에서 parent `@observe()`를 켠 뒤 진행합니다.
 
 ---
 
@@ -109,7 +110,8 @@ python agent.py
 ```bash
 python agent.py
 ```
-질문을 살짝 바꿔서 — 예: `"u001 사용자 정보와 production logs를 함께 알려줘"` — 두 tool이 모두 호출되는지 trace에서 확인.
+질문을 살짝 바꿔서 — 예: `"u001 사용자 정보와 production logs를 함께 알려줘"` — 두 tool이 모두 호출되는지 터미널 출력에서 확인.
+Step 3 이후에는 같은 흐름을 Langfuse trace에서도 확인.
 
 **옵션 (+):** 인자 validation
 - `user_id`가 비어있거나 'u'로 시작하지 않으면 에러 반환
@@ -120,6 +122,8 @@ python agent.py
 ## Step 3 · Langfuse @observe 데코레이터 (10~15분)
 
 `agent.py`의 **TODO 2** 위치에 `@observe()` 데코레이터를 활성화합니다.
+`llm.generate_content`와 `tool.execute` helper는 이미 span으로 계측되어 있으므로,
+`react_loop`에 parent trace를 붙이면 Langfuse에서 nested 구조로 보입니다.
 
 **기본:**
 - `# @observe()` 주석을 풀어 한 줄을 활성화
@@ -129,18 +133,21 @@ python agent.py
 
 확인 포인트:
 - `react_loop` 노드 (입력 / 출력 / 시간)
-- 내부 LLM 호출 + tool 호출이 어떻게 보이는가
+- 하위 `llm.generate_content` span — step, message count, tool call 요청
+- 하위 `tool.execute` span — tool 이름, 인자, 반환값
 
 **옵션 (+):** custom metadata
 ```python
 from langfuse import get_client
 
-get_client().update_current_trace(
-    user_id="your_nickname",
-    tags=["day1"],
+get_client().update_current_span(
+    metadata={
+        "user_id": "your_nickname",
+        "tags": ["day1"],
+    },
 )
 ```
-이렇게 트레이스에 본인 식별자를 붙이면 다른 학생들과 구분됨.
+이렇게 현재 span에 본인 식별자를 붙이면 다른 학생들과 구분됨.
 
 ---
 
@@ -203,7 +210,7 @@ python evaluate.py
 - 로컬: `pip install -r requirements.txt` 다시 실행, venv 활성화 확인
 
 ### `GEMINI_API_KEY` 미설정 에러
-- `.env` 파일이 `practice/day1/` 디렉토리에 있는지
+- `.env` 파일이 repo root, 즉 `kisa-ai-agent-practice/.env` 위치에 있는지
 - key 양 옆에 따옴표/공백 없는지
 
 ### Langfuse 연결 실패
@@ -212,7 +219,8 @@ python evaluate.py
 
 ### Trace가 대시보드에 안 보임
 - 1~2초 지연이 있을 수 있음, 새로고침
-- 스크립트가 즉시 종료되는 환경(serverless 등)에서는 끝에 `get_client().flush()`를 명시적으로 호출
+- 이 실습 스크립트들은 종료 시 `get_client().flush()`를 호출함
+- 그래도 안 보이면 Langfuse key/host가 맞는지, `@observe()` 주석을 풀었는지 확인
 
 ---
 

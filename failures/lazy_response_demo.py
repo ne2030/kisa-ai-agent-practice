@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
+from langfuse import get_client
 
 
 # 의도적 버그 — system_instruction을 비움
@@ -38,11 +39,14 @@ if __name__ == "__main__":
 
     sample = "production logs를 분석해서 주요 에러 패턴을 알려줘"
 
-    answer = react_loop(sample, max_steps=4)
+    try:
+        answer = react_loop(sample, max_steps=4)
 
-    print("\n=== 답변 ===")
-    print(answer)
-    print("\n→ Langfuse trace 확인:")
-    print("  • tool 호출은 정상이었는가? 그렇다면 답변이 빈약한 이유는?")
-    print("  • 마지막 step 응답이 *분석*인가 *'분석하겠습니다'* 같은 punt인가?")
-    print("  • system_instruction 한 줄이 어떻게 같은 모델을 다르게 동작시키는가?")
+        print("\n=== 답변 ===")
+        print(answer)
+        print("\n→ Langfuse trace 확인:")
+        print("  • tool 호출은 정상이었는가? 그렇다면 답변이 빈약한 이유는?")
+        print("  • 마지막 step 응답이 *분석*인가 *'분석하겠습니다'* 같은 punt인가?")
+        print("  • system_instruction 한 줄이 어떻게 같은 모델을 다르게 동작시키는가?")
+    finally:
+        get_client().flush()

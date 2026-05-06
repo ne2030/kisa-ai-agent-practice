@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
+from langfuse import get_client
 
 # 의도적 버그 — search_db 핸들러를 오타 키로 등록
 agent.HANDLERS["search_databse"] = agent.HANDLERS.pop("search_db")
@@ -33,3 +34,5 @@ if __name__ == "__main__":
         print("\n→ Langfuse trace 확인:")
         print("  • 모델이 호출한 function 이름은?")
         print("  • HANDLERS에는 어떤 키가 있는가?")
+    finally:
+        get_client().flush()

@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
+from langfuse import get_client
 
 
 # 의도적 버그 — tool은 항상 비어 있음
@@ -44,11 +45,14 @@ if __name__ == "__main__":
         "최대한 구체적으로."
     )
 
-    answer = react_loop(sample, max_steps=4)
+    try:
+        answer = react_loop(sample, max_steps=4)
 
-    print("\n=== 답변 ===")
-    print(answer)
-    print("\n→ Langfuse trace 확인:")
-    print("  • search_db tool의 출력은 무엇이었는가?")
-    print("  • 최종 답변에는 그 출력에 *없던* 정보가 있는가?")
-    print("  • 답변의 각 주장이 어디에서 왔는지 추적 가능한가?")
+        print("\n=== 답변 ===")
+        print(answer)
+        print("\n→ Langfuse trace 확인:")
+        print("  • search_db tool의 출력은 무엇이었는가?")
+        print("  • 최종 답변에는 그 출력에 *없던* 정보가 있는가?")
+        print("  • 답변의 각 주장이 어디에서 왔는지 추적 가능한가?")
+    finally:
+        get_client().flush()

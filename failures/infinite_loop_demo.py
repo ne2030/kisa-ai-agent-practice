@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
+from langfuse import get_client
 
 
 # 의도적 버그 — tool이 항상 빈 결과 반환
@@ -46,3 +47,5 @@ if __name__ == "__main__":
         print("  • 같은 tool을 몇 번 호출했는가?")
         print("  • 매 호출마다 query가 어떻게 바뀌었는가?")
         print("  • 모델이 결과 없음을 받고도 계속 시도한 이유는?")
+    finally:
+        get_client().flush()

@@ -13,6 +13,7 @@
 from pathlib import Path
 
 import yaml
+from langfuse import get_client
 
 import agent
 from agent import react_loop
@@ -64,6 +65,7 @@ def check(answer: str, tools_called: list[str], expected: dict) -> tuple[bool, l
 
 
 def evaluate_one(case: dict) -> dict:
+    original_handlers = dict(agent.HANDLERS)
     tracked = _wrap_handlers_for_tracking()
     try:
         answer = react_loop(case["input"], max_steps=5)
@@ -83,6 +85,10 @@ def evaluate_one(case: dict) -> dict:
             "tools": list(tracked),
             "reasons": [f"실행 에러: {type(e).__name__}: {e}"],
         }
+    finally:
+        # 다음 case에서 wrapper가 중첩되지 않도록 원래 handler로 복원.
+        agent.HANDLERS.clear()
+        agent.HANDLERS.update(original_handlers)
 
 
 if __name__ == "__main__":
@@ -106,3 +112,4 @@ if __name__ == "__main__":
     passed_n = sum(1 for r in results if r["passed"])
     total = len(results)
     print(f"=== Summary: {passed_n}/{total} passed ({passed_n / total * 100:.0f}%) ===")
+    get_client().flush()

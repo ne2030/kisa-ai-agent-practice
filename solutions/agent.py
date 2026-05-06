@@ -12,6 +12,8 @@ from langfuse import get_client, observe
 
 load_dotenv()
 
+MODEL_NAME = "gemini-2.5-flash"
+
 
 SYSTEM_INSTRUCTION = (
     "당신은 사내 데이터 분석 어시스턴트입니다. "
@@ -27,21 +29,40 @@ SYSTEM_INSTRUCTION = (
 # ============================================================
 
 def search_db(query: str) -> str:
-    mock = {
-        "production logs": (
-            "최근 24시간: 5K logs · errors 0.2% · p95 latency 320ms"
-        ),
-        "error patterns": (
-            "top: TimeoutError(45%), ConnectionRefused(28%), ValueError(12%)"
-        ),
-        "oauth": (
-            "OAuth refresh token 만료된 user 12명 (user_id: u001~u012)"
-        ),
-    }
-    for key, value in mock.items():
-        if key in query.lower():
-            return value
-    return f"no results for: '{query}'"
+    normalized = query.lower()
+
+    production_summary = "최근 24시간: 5K logs · errors 0.2% · p95 latency 320ms"
+    error_patterns = "top errors: TimeoutError(45%), ConnectionRefused(28%), ValueError(12%)"
+    oauth_summary = "OAuth refresh token 만료된 user 12명 (user_id: u001~u012)"
+
+    wants_production = any(
+        keyword in normalized
+        for keyword in ["production", "prod", "logs", "로그", "상태", "latency"]
+    )
+    wants_errors = any(
+        keyword in normalized
+        for keyword in ["error", "errors", "에러", "오류", "패턴", "timeout", "connection"]
+    )
+    wants_oauth = any(
+        keyword in normalized
+        for keyword in ["oauth", "refresh", "token", "토큰", "만료"]
+    )
+    asks_unknown_user = any(
+        keyword in normalized
+        for keyword in ["u999", "존재하지", "로그인 이력", "login history"]
+    )
+
+    if asks_unknown_user:
+        return "확인된 데이터 없음: 해당 user의 로그인 이력이 없습니다."
+    if wants_production and wants_errors:
+        return f"{production_summary}\n{error_patterns}"
+    if wants_errors:
+        return error_patterns
+    if wants_oauth:
+        return oauth_summary
+    if wants_production:
+        return production_summary
+    return f"확인된 데이터 없음: '{query}'"
 
 
 # === TODO 1 정답 ===
@@ -52,7 +73,7 @@ def get_user_info(user_id: str) -> str:
         "u002": "name=Lee · team=Data · role=Analyst · joined=2025-01",
         "u012": "name=Park · team=Platform · role=Frontend · joined=2025-08",
     }
-    return mock_users.get(user_id, f"unknown user_id: '{user_id}'")
+    return mock_users.get(user_id, f"확인된 사용자 정보 없음: user_id='{user_id}'")
 
 
 TOOLS: list[types.FunctionDeclaration] = [
@@ -98,11 +119,80 @@ HANDLERS = {
 # 2) ReAct loop  (TODO 2 정답: @observe 활성화)
 # ============================================================
 
+
+def _last_text_preview(contents: list[types.Content]) -> str:
+    for content in reversed(contents):
+        for part in reversed(content.parts or []):
+            if part.text:
+                return part.text[:200]
+            if part.function_response:
+                return str(part.function_response.response)[:200]
+    return ""
+
+
+def _response_preview(response) -> dict:
+    candidate = response.candidates[0]
+    tool_calls = []
+    text_parts = []
+    for part in candidate.content.parts or []:
+        if part.function_call:
+            tool_calls.append(
+                {
+                    "name": part.function_call.name,
+                    "args": dict(part.function_call.args or {}),
+                }
+            )
+        elif part.text:
+            text_parts.append(part.text[:200])
+    return {
+        "tool_calls": tool_calls,
+        "text_preview": "\n".join(text_parts)[:400],
+    }
+
+
+@observe(
+    name="llm.generate_content",
+    as_type="generation",
+    capture_input=False,
+    capture_output=False,
+)
+def call_llm(
+    client: genai.Client,
+    contents: list[types.Content],
+    config: types.GenerateContentConfig,
+    step: int,
+):
+    get_client().update_current_span(
+        input={
+            "step": step,
+            "message_count": len(contents),
+            "last_observation": _last_text_preview(contents),
+        },
+        metadata={
+            "model": MODEL_NAME,
+            "available_tools": [tool.name for tool in TOOLS],
+        },
+    )
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=contents,
+        config=config,
+    )
+    get_client().update_current_span(output=_response_preview(response))
+    return response
+
+
+@observe(name="tool.execute", as_type="tool")
+def execute_tool(tool_name: str, args: dict) -> str:
+    if tool_name not in HANDLERS:
+        raise ValueError(f"Unknown tool: {tool_name}")
+    return HANDLERS[tool_name](**args)
+
+
 @observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
-    # 옵션: trace에 metadata 추가 (v3 — get_client()로 현재 client 핸들 획득)
-    get_client().update_current_trace(
-        tags=["day1", "solution"],
+    get_client().update_current_span(
+        metadata={"tags": ["day1", "solution"]},
     )
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
@@ -125,11 +215,7 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
     for step in range(max_steps):
         print(f"\n[Step {step + 1}]")
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=config,
-        )
+        response = call_llm(client, contents, config, step + 1)
 
         candidate = response.candidates[0]
         function_calls = []
@@ -151,10 +237,7 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
             args = dict(fc.args) if fc.args else {}
             print(f"  → {fc.name}({args})")
 
-            if fc.name not in HANDLERS:
-                raise ValueError(f"Unknown tool: {fc.name}")
-
-            result = HANDLERS[fc.name](**args)
+            result = execute_tool(fc.name, args)
             print(f"     ← {str(result)[:120]}")
 
             contents.append(
@@ -175,6 +258,9 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
 if __name__ == "__main__":
     sample_query = "production logs와 OAuth refresh token 만료 user 정보를 종합해줘"
     print(f"User: {sample_query}")
-    answer = react_loop(sample_query)
-    print("\n=== 최종 답변 ===")
-    print(answer)
+    try:
+        answer = react_loop(sample_query)
+        print("\n=== 최종 답변 ===")
+        print(answer)
+    finally:
+        get_client().flush()
