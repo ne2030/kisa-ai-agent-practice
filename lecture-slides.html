@@ -2289,7 +2289,7 @@ HANDLERS = {<span class="str">"search_db"</span>: search_db}
 <span class="com">#   LANGFUSE_PUBLIC_KEY=...</span>
 <span class="com">#   LANGFUSE_SECRET_KEY=...</span>
 
-<span class="fn">@observe</span>()                    <span class="com"># ← 이 한 줄</span>
+<span class="fn">@langfuse.observe</span>()                    <span class="com"># ← 이 한 줄</span>
 <span class="kw">def</span> <span class="fn">react_loop</span>(user_input: <span class="kw">str</span>):
     client = genai.<span class="fn">Client</span>(...)
     messages = [...]
@@ -2948,7 +2948,7 @@ Return JSON:
                 ><span class="step-time">10~15분</span>
                 <span class="step-num">03</span
                 ><span class="step-text"
-                    ><code>@observe</code> + Langfuse UI 확인<br /><em>+ custom metadata</em></span
+                    ><code>@langfuse.observe</code> + Langfuse UI 확인<br /><em>+ custom metadata</em></span
                 ><span class="step-time">10~15분</span>
                 <span class="step-num">04</span
                 ><span class="step-text"

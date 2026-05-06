@@ -7,7 +7,7 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 ## 무엇을 만드나
 
 - **agent.py** — Gemini 2.5 Flash 기반 ReAct loop. tool 호출을 직접 검증/실행
-- **trace** — Langfuse `@observe` 데코레이터로 자동 trace 기록
+- **trace** — Langfuse `@langfuse.observe` 데코레이터로 자동 trace 기록
 - **failures/** — 의도적으로 망가진 시나리오 4종, trace로 진단 연습
 - **evaluate.py** — `golden_set.yaml`의 5개 hard sample을 자동 평가
 
@@ -94,7 +94,7 @@ python3 agent.py
 ```
 
 샘플 질문에 대해 터미널에서 모델이 `search_db`를 호출하는 흐름을 확인합니다.
-Langfuse의 nested trace 확인은 Step 3에서 parent `@observe()`를 켠 뒤 진행합니다.
+Langfuse의 nested trace 확인은 Step 3에서 parent `@langfuse.observe()`를 켠 뒤 진행합니다.
 
 ---
 
@@ -120,14 +120,14 @@ Step 3 이후에는 같은 흐름을 Langfuse trace에서도 확인.
 
 ---
 
-## Step 3 · Langfuse @observe 데코레이터 (10~15분)
+## Step 3 · Langfuse @langfuse.observe 데코레이터 (10~15분)
 
-`agent.py`의 **TODO 2** 위치에 `@observe()` 데코레이터를 활성화합니다.
+`agent.py`의 **TODO 2** 위치에 `@langfuse.observe()` 데코레이터를 활성화합니다.
 `llm.generate_content`와 `tool.execute` helper는 이미 span으로 계측되어 있으므로,
 `react_loop`에 parent trace를 붙이면 Langfuse에서 nested 구조로 보입니다.
 
 **기본:**
-- `# @observe()` 주석을 풀어 한 줄을 활성화
+- `# @langfuse.observe()` 주석을 풀어 한 줄을 활성화
 - 다시 `python3 agent.py` 실행
 - [cloud.langfuse.com](https://cloud.langfuse.com) 대시보드에서 본인 프로젝트의 **Tracing** 탭 열기
 - 방금 실행한 trace를 클릭해서 nested span tree 확인
@@ -139,9 +139,9 @@ Step 3 이후에는 같은 흐름을 Langfuse trace에서도 확인.
 
 **옵션 (+):** custom metadata
 ```python
-from langfuse import get_client
+import langfuse
 
-get_client().update_current_span(
+langfuse.get_client().update_current_span(
     metadata={
         "user_id": "your_nickname",
         "tags": ["day1"],
@@ -220,8 +220,8 @@ python3 evaluate.py
 
 ### Trace가 대시보드에 안 보임
 - 1~2초 지연이 있을 수 있음, 새로고침
-- 이 실습 스크립트들은 종료 시 `get_client().flush()`를 호출함
-- 그래도 안 보이면 Langfuse key/host가 맞는지, `@observe()` 주석을 풀었는지 확인
+- 이 실습 스크립트들은 종료 시 `langfuse.get_client().flush()`를 호출함
+- 그래도 안 보이면 Langfuse key/host가 맞는지, `@langfuse.observe()` 주석을 풀었는지 확인
 
 ---
 
@@ -231,7 +231,7 @@ python3 evaluate.py
 
 - `solutions/01_baseline.py` — 시작 상태
 - `solutions/02_add_tool.py` — TODO 1 정답
-- `solutions/03_nested_trace.py` — TODO 1 + TODO 2 parent `@observe()` 정답
+- `solutions/03_nested_trace.py` — TODO 1 + TODO 2 parent `@langfuse.observe()` 정답
 - `solutions/04_metadata.py` — metadata 예시까지 포함
 - `solutions/agent.py` — 최종본
 

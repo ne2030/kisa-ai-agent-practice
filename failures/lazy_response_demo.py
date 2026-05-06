@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
-from langfuse import get_client
+import langfuse
 
 
 # 의도적 버그 — tool 결과를 받고도 실제 분석을 하지 않게 만드는 나쁜 prompt
@@ -53,4 +53,4 @@ if __name__ == "__main__":
         print("  • 마지막 step 응답이 *분석*인가 *'분석하겠습니다'* 같은 punt인가?")
         print("  • system_instruction 한 줄이 어떻게 같은 모델을 다르게 동작시키는가?")
     finally:
-        get_client().flush()
+        langfuse.get_client().flush()

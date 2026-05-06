@@ -1,6 +1,6 @@
 """Step 2 answer — 두 번째 tool(get_user_info) 추가.
 
-아직 react_loop parent @observe는 켜지지 않았습니다.
+아직 react_loop parent @langfuse.observe는 켜지지 않았습니다.
 그래서 Langfuse 목록에서는 llm.generate_content / tool.execute가 따로 보일 수 있습니다.
 """
 
@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from langfuse import get_client, observe
+import langfuse
 
 load_dotenv()
 
@@ -117,7 +117,7 @@ HANDLERS = {
 
 
 # ============================================================
-# 2) ReAct loop  (Step 3 전: parent @observe 아직 비활성화)
+# 2) ReAct loop  (Step 3 전: parent @langfuse.observe 아직 비활성화)
 # ============================================================
 
 
@@ -151,7 +151,7 @@ def _response_preview(response) -> dict:
     }
 
 
-@observe(
+@langfuse.observe(
     name="llm.generate_content",
     as_type="generation",
     capture_input=False,
@@ -163,7 +163,7 @@ def call_llm(
     config: types.GenerateContentConfig,
     step: int,
 ):
-    get_client().update_current_span(
+    langfuse.get_client().update_current_span(
         input={
             "step": step,
             "message_count": len(contents),
@@ -179,18 +179,18 @@ def call_llm(
         contents=contents,
         config=config,
     )
-    get_client().update_current_span(output=_response_preview(response))
+    langfuse.get_client().update_current_span(output=_response_preview(response))
     return response
 
 
-@observe(name="tool.execute", as_type="tool")
+@langfuse.observe(name="tool.execute", as_type="tool")
 def execute_tool(tool_name: str, args: dict) -> str:
     if tool_name not in HANDLERS:
         raise ValueError(f"Unknown tool: {tool_name}")
     return HANDLERS[tool_name](**args)
 
 
-# @observe()  # Step 3에서 활성화 — 아직 parent trace 없음
+# @langfuse.observe()  # Step 3에서 활성화 — 아직 parent trace 없음
 def react_loop(user_input: str, max_steps: int = 10) -> str:
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -260,4 +260,4 @@ if __name__ == "__main__":
         print("\n=== 최종 답변 ===")
         print(answer)
     finally:
-        get_client().flush()
+        langfuse.get_client().flush()

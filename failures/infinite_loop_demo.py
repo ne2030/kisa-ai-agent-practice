@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import agent
 from agent import react_loop
-from langfuse import get_client
+import langfuse
 
 
 # 의도적 버그 — tool이 항상 빈 결과 반환
@@ -50,4 +50,4 @@ if __name__ == "__main__":
         print("  • query와 tool output은 재시도 가치가 있는 정보였는가?")
         print("  • max_steps를 늘리면 재시도/중단 중 어떤 행동을 하는가?")
     finally:
-        get_client().flush()
+        langfuse.get_client().flush()

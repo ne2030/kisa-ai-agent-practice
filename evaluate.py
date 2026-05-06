@@ -13,7 +13,7 @@
 from pathlib import Path
 
 import yaml
-from langfuse import get_client
+import langfuse
 
 import agent
 from agent import react_loop
@@ -112,4 +112,4 @@ if __name__ == "__main__":
     passed_n = sum(1 for r in results if r["passed"])
     total = len(results)
     print(f"=== Summary: {passed_n}/{total} passed ({passed_n / total * 100:.0f}%) ===")
-    get_client().flush()
+    langfuse.get_client().flush()

@@ -9,7 +9,7 @@
 
 학생 작업 지점:
 - TODO 1: 두 번째 tool 추가 (Step 2)
-- TODO 2: @observe 데코레이터로 Langfuse trace 활성화 (Step 3)
+- TODO 2: @langfuse.observe 데코레이터로 Langfuse trace 활성화 (Step 3)
 """
 
 import os
@@ -19,7 +19,7 @@ from google import genai
 from google.genai import types
 
 # Step 3에서 사용할 Langfuse 데코레이터.
-from langfuse import get_client, observe  # noqa: F401
+import langfuse
 
 load_dotenv()
 
@@ -119,14 +119,14 @@ HANDLERS = {
 # ============================================================
 
 # ------------------------------------------------------------
-# TODO 2 — Step 3: 아래 react_loop 함수에 @observe() 데코레이터를 붙이세요.
+# TODO 2 — Step 3: 아래 react_loop 함수에 @langfuse.observe() 데코레이터를 붙이세요.
 #
 # 데코레이터를 붙이면 Langfuse가 자동으로 입출력 + 시간을 기록합니다.
 # import는 파일 상단에 이미 준비돼 있습니다.
 #
 # 옵션: 데코레이터 안에서 span metadata 추가
 #   def react_loop(...):
-#       get_client().update_current_span(
+#       langfuse.get_client().update_current_span(
 #           metadata={"user_id": "your_nickname", "tags": ["day1"]},
 #       )
 #       ...
@@ -167,8 +167,8 @@ def _response_preview(response) -> dict:
 
 # 관찰용 helper — Langfuse nested span을 예쁘게 보여주기 위한 코드입니다.
 # 학생 실습에서는 이 블록을 수정하지 않아도 됩니다. TODO는 위의 tool 추가와
-# 아래 react_loop의 parent @observe 활성화 두 군데만 보면 됩니다.
-@observe(
+# 아래 react_loop의 parent @langfuse.observe 활성화 두 군데만 보면 됩니다.
+@langfuse.observe(
     name="llm.generate_content",
     as_type="generation",
     capture_input=False,
@@ -181,7 +181,7 @@ def call_llm(
     step: int,
 ):
     """LLM decide 단계. react_loop 아래 nested generation span으로 기록."""
-    get_client().update_current_span(
+    langfuse.get_client().update_current_span(
         input={
             "step": step,
             "message_count": len(contents),
@@ -197,18 +197,18 @@ def call_llm(
         contents=contents,
         config=config,
     )
-    get_client().update_current_span(output=_response_preview(response))
+    langfuse.get_client().update_current_span(output=_response_preview(response))
     return response
 
 
-@observe(name="tool.execute", as_type="tool")
+@langfuse.observe(name="tool.execute", as_type="tool")
 def execute_tool(tool_name: str, args: dict) -> str:
     """Host application의 tool validation + 실행을 nested tool span으로 기록."""
     if tool_name not in HANDLERS:
         raise ValueError(f"Unknown tool: {tool_name}")
     return HANDLERS[tool_name](**args)
 
-# @observe()  ← TODO 2: 이 줄 주석 해제
+# @langfuse.observe()  ← TODO 2: 이 줄 주석 해제
 def react_loop(user_input: str, max_steps: int = 10) -> str:
     """observe → decide → act → observe loop."""
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
@@ -287,4 +287,4 @@ if __name__ == "__main__":
         print("\n=== 최종 답변 ===")
         print(answer)
     finally:
-        get_client().flush()
+        langfuse.get_client().flush()

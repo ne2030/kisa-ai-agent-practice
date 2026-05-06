@@ -1,4 +1,4 @@
-"""Step 3 answer — parent @observe 활성화.
+"""Step 3 answer — parent @langfuse.observe 활성화.
 
 이 단계부터 react_loop 하나 아래에 llm.generate_content와 tool.execute가 nested span으로 묶입니다.
 """
@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from langfuse import get_client, observe
+import langfuse
 
 load_dotenv()
 
@@ -116,7 +116,7 @@ HANDLERS = {
 
 
 # ============================================================
-# 2) ReAct loop  (TODO 2 정답: @observe 활성화)
+# 2) ReAct loop  (TODO 2 정답: @langfuse.observe 활성화)
 # ============================================================
 
 
@@ -150,7 +150,7 @@ def _response_preview(response) -> dict:
     }
 
 
-@observe(
+@langfuse.observe(
     name="llm.generate_content",
     as_type="generation",
     capture_input=False,
@@ -162,7 +162,7 @@ def call_llm(
     config: types.GenerateContentConfig,
     step: int,
 ):
-    get_client().update_current_span(
+    langfuse.get_client().update_current_span(
         input={
             "step": step,
             "message_count": len(contents),
@@ -178,18 +178,18 @@ def call_llm(
         contents=contents,
         config=config,
     )
-    get_client().update_current_span(output=_response_preview(response))
+    langfuse.get_client().update_current_span(output=_response_preview(response))
     return response
 
 
-@observe(name="tool.execute", as_type="tool")
+@langfuse.observe(name="tool.execute", as_type="tool")
 def execute_tool(tool_name: str, args: dict) -> str:
     if tool_name not in HANDLERS:
         raise ValueError(f"Unknown tool: {tool_name}")
     return HANDLERS[tool_name](**args)
 
 
-@observe()  # ← TODO 2 정답
+@langfuse.observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -259,4 +259,4 @@ if __name__ == "__main__":
         print("\n=== 최종 답변 ===")
         print(answer)
     finally:
-        get_client().flush()
+        langfuse.get_client().flush()
