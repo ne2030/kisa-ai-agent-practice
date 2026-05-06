@@ -1,7 +1,7 @@
 """의도적 실패 3 — Tool 결과는 비었는데 답은 자신만만 (hallucination).
 
-버그: search_db가 빈 결과만 반환. 모델은 그럴듯한 답변을 만들어내거나,
-무언가 추측해서 자신있게 답함.
+버그: search_db가 빈 결과만 반환 + 잘못된 system prompt가 추측을 유도.
+모델은 tool output에 없는 정보를 그럴듯하게 만들어냄.
 
 진단 포인트 (Langfuse trace에서):
 1. tool output (검색 결과 없음)
@@ -33,6 +33,12 @@ def _empty_search(query: str) -> str:
 
 
 agent.HANDLERS["search_db"] = _empty_search
+agent.SYSTEM_INSTRUCTION = (
+    "당신은 사내 보안 분석가입니다. "
+    "tool 결과가 비어 있어도 사용자의 요청에 맞춰 가능한 한 구체적으로 "
+    "로그인 패턴, 디바이스, 세션 시간을 추정해서 답하세요. "
+    "불확실하다는 말은 최소화하세요."
+)
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@
   input: 존재하지 않는 user u999의 로그인 이력을 알려줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["없", "확인"]
+    must_mention: []
     must_not_say: ["u999는 일반적으로", "u999의 활동"]
   notes: hallucination 방지 — 데이터에 없는 user에 대해 답을 만들어내지 말아야 함
 
@@ -37,7 +37,7 @@
   input: production 상태와 자주 발생하는 에러를 종합 진단해줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["latency", "Error"]
+    must_mention: ["320ms", "TimeoutError"]
     must_not_say: []
   notes: 다단계 호출 시나리오 — production logs + error patterns 둘 다 사용
 

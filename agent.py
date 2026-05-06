@@ -24,9 +24,8 @@ load_dotenv()
 MODEL_NAME = "gemini-2.5-flash"
 
 
-# system prompt — 모델의 동작 규약. 비워두면 모델이 tool 결과를 받고도
-# "확인하겠습니다 / 분석하겠습니다" 같은 punt로 끝낼 수 있음
-# (failures/lazy_response_demo.py에서 직접 관찰).
+# system prompt — 모델의 동작 규약. 비워두거나 잘못 쓰면 모델이 tool 결과를
+# 받고도 "확인하겠습니다 / 분석하겠습니다" 같은 punt로 끝낼 수 있음.
 SYSTEM_INSTRUCTION = (
     "당신은 사내 데이터 분석 어시스턴트입니다. "
     "사용자의 질문을 받으면 필요한 tool을 호출해 데이터를 가져온 뒤, "
@@ -164,6 +163,9 @@ def _response_preview(response) -> dict:
     }
 
 
+# 관찰용 helper — Langfuse nested span을 예쁘게 보여주기 위한 코드입니다.
+# 학생 실습에서는 이 블록을 수정하지 않아도 됩니다. TODO는 위의 tool 추가와
+# 아래 react_loop의 parent @observe 활성화 두 군데만 보면 됩니다.
 @observe(
     name="llm.generate_content",
     as_type="generation",

@@ -3,7 +3,7 @@
 Gemini API + Langfuse 두 서비스에 ping 보내서 연결 OK인지 확인.
 
 실행:
-    python check_env.py
+    python3 check_env.py
 """
 
 import os
@@ -63,7 +63,7 @@ except Exception as e:
 # ----------------------------------------------------
 print()
 if ok:
-    print("🎉 모든 연결 정상. 다음 단계: python agent.py")
+    print("🎉 모든 연결 정상. 다음 단계: python3 agent.py")
     sys.exit(0)
 else:
     print("⚠️  실패한 항목이 있습니다. .env 파일과 키를 다시 확인하세요.")
