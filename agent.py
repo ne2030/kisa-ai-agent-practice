@@ -23,6 +23,12 @@ load_dotenv()
 
 MODEL_NAME = "gemini-2.5-flash"
 
+# Gemini 2.5 Flash Standard paid-tier estimate (USD / 1M tokens).
+# Token counts come from the Gemini response; cost is calculated locally so
+# Langfuse can display a cost even if the model pricing is not configured there.
+GEMINI_INPUT_USD_PER_1M = 0.30
+GEMINI_OUTPUT_USD_PER_1M = 2.50
+
 
 # system prompt — 모델의 동작 규약. 비워두거나 잘못 쓰면 모델이 tool 결과를
 # 받고도 "확인하겠습니다 / 분석하겠습니다" 같은 punt로 끝낼 수 있음.
@@ -163,6 +169,52 @@ def _response_preview(response) -> dict:
     }
 
 
+def _usage_details(response) -> dict[str, int]:
+    """Gemini usage_metadata를 Langfuse usage_details 형식으로 변환."""
+    usage = getattr(response, "usage_metadata", None)
+    if not usage:
+        return {}
+
+    input_tokens = int(getattr(usage, "prompt_token_count", None) or 0)
+    output_text_tokens = int(getattr(usage, "candidates_token_count", None) or 0)
+    reasoning_tokens = int(getattr(usage, "thoughts_token_count", None) or 0)
+    output_tokens = output_text_tokens + reasoning_tokens
+    total_tokens = int(getattr(usage, "total_token_count", None) or 0)
+
+    details = {
+        "input": input_tokens,
+        "output": output_tokens,
+        "total": total_tokens or input_tokens + output_tokens,
+    }
+
+    # 아래 세부 항목은 디버깅용입니다. 과금 계산에는 input/output만 사용합니다.
+    if output_text_tokens:
+        details["candidates"] = output_text_tokens
+    if reasoning_tokens:
+        details["reasoning"] = reasoning_tokens
+
+    cached_input_tokens = int(getattr(usage, "cached_content_token_count", None) or 0)
+    if cached_input_tokens:
+        details["cached_input"] = cached_input_tokens
+
+    tool_use_prompt_tokens = int(getattr(usage, "tool_use_prompt_token_count", None) or 0)
+    if tool_use_prompt_tokens:
+        details["tool_use_prompt"] = tool_use_prompt_tokens
+
+    return details
+
+
+def _cost_details(usage_details: dict[str, int]) -> dict[str, float]:
+    """Gemini 2.5 Flash Standard paid-tier 기준의 대략적 비용."""
+    input_cost = usage_details.get("input", 0) * GEMINI_INPUT_USD_PER_1M / 1_000_000
+    output_cost = usage_details.get("output", 0) * GEMINI_OUTPUT_USD_PER_1M / 1_000_000
+    return {
+        "input": input_cost,
+        "output": output_cost,
+        "total": input_cost + output_cost,
+    }
+
+
 # 관찰용 helper — Langfuse nested span을 예쁘게 보여주기 위한 코드입니다.
 # 학생 실습에서는 이 블록을 수정하지 않아도 됩니다. TODO는 위의 tool 추가와
 # 아래 react_loop의 parent @langfuse.observe 활성화 두 군데만 보면 됩니다.
@@ -179,23 +231,30 @@ def call_llm(
     step: int,
 ):
     """LLM decide 단계. react_loop 아래 nested generation span으로 기록."""
-    langfuse.get_client().update_current_span(
+    langfuse.get_client().update_current_generation(
         input={
             "step": step,
             "message_count": len(contents),
             "last_observation": _last_text_preview(contents),
         },
         metadata={
-            "model": MODEL_NAME,
             "available_tools": [tool.name for tool in TOOLS],
+            "pricing_note": "estimated Gemini 2.5 Flash Standard paid-tier USD",
         },
+        model=MODEL_NAME,
     )
     response = client.models.generate_content(
         model=MODEL_NAME,
         contents=contents,
         config=config,
     )
-    langfuse.get_client().update_current_span(output=_response_preview(response))
+    usage_details = _usage_details(response)
+    langfuse.get_client().update_current_generation(
+        output=_response_preview(response),
+        model=MODEL_NAME,
+        usage_details=usage_details,
+        cost_details=_cost_details(usage_details),
+    )
     return response
 
 
