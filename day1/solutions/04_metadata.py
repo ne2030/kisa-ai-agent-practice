@@ -1,6 +1,6 @@
-"""Step 3 answer — parent @langfuse.observe 활성화.
+"""Step 4 answer — metadata까지 추가한 최종 예시.
 
-이 단계부터 react_loop 하나 아래에 llm.generate_content와 tool.execute가 nested span으로 묶입니다.
+trace tree는 Step 3와 같고, Metadata/Tags로 본인 실행을 찾기 쉬워집니다.
 """
 
 import os
@@ -26,7 +26,10 @@ SYSTEM_INSTRUCTION = (
     "사용자의 질문을 받으면 필요한 tool을 호출해 데이터를 가져온 뒤, "
     "그 즉시 데이터를 사용해 분석한 결과를 답변하세요. "
     "'확인하겠습니다', '분석하겠습니다' 같은 중간 안내 멘트 없이 "
-    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다."
+    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다. "
+    "tool 결과에 데이터가 없으면 확인된 데이터가 없다고 답하고, "
+    "일반적인 패턴이나 추정 정보를 만들어내지 마세요. "
+    "원인, 영향, 해결책도 tool 결과에 없으면 단정하지 마세요."
 )
 
 
@@ -250,6 +253,10 @@ def execute_tool(tool_name: str, args: dict) -> str:
 
 @langfuse.observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
+    langfuse.get_client().update_current_span(
+        metadata={"user_id": "instructor", "tags": ["day1", "solution", "step4"]},
+    )
+
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
     contents: list[types.Content] = [

@@ -1,7 +1,6 @@
-"""Step 2 answer — 두 번째 tool(get_user_info) 추가.
+"""Step 3 answer — parent @langfuse.observe 활성화.
 
-아직 react_loop parent @langfuse.observe는 켜지지 않았습니다.
-그래서 Langfuse 목록에서는 llm.generate_content / tool.execute가 따로 보일 수 있습니다.
+이 단계부터 react_loop 하나 아래에 llm.generate_content와 tool.execute가 nested span으로 묶입니다.
 """
 
 import os
@@ -27,7 +26,10 @@ SYSTEM_INSTRUCTION = (
     "사용자의 질문을 받으면 필요한 tool을 호출해 데이터를 가져온 뒤, "
     "그 즉시 데이터를 사용해 분석한 결과를 답변하세요. "
     "'확인하겠습니다', '분석하겠습니다' 같은 중간 안내 멘트 없이 "
-    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다."
+    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다. "
+    "tool 결과에 데이터가 없으면 확인된 데이터가 없다고 답하고, "
+    "일반적인 패턴이나 추정 정보를 만들어내지 마세요. "
+    "원인, 영향, 해결책도 tool 결과에 없으면 단정하지 마세요."
 )
 
 
@@ -123,7 +125,7 @@ HANDLERS = {
 
 
 # ============================================================
-# 2) ReAct loop  (Step 3 전: parent @langfuse.observe 아직 비활성화)
+# 2) ReAct loop  (TODO 2 정답: @langfuse.observe 활성화)
 # ============================================================
 
 
@@ -249,7 +251,7 @@ def execute_tool(tool_name: str, args: dict) -> str:
     return HANDLERS[tool_name](**args)
 
 
-# @langfuse.observe()  # Step 3에서 활성화 — 아직 parent trace 없음
+@langfuse.observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 

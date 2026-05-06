@@ -1,5 +1,5 @@
 {
-  "name": "KISA AI Agent Practice — Day 1",
+  "name": "KISA AI Agent Practice — Day 1 & Day 2",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "postCreateCommand": "pip install --no-cache-dir -r requirements.txt",
   "customizations": {

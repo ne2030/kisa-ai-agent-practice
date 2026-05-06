@@ -1,6 +1,13 @@
-"""Day 1 — agent.py 정답 (TODO 1, 2 완성).
+"""Day 1 — ReAct loop 데모.
 
-학생이 막혔을 때 비교용. 강의자가 적절한 시점에 공개.
+핵심 구조:
+1. 도구(tool) 정의 — schema (LLM에게 알려주는 인터페이스) + 실제 함수
+2. ReAct loop — observe → decide → act → observe 반복
+3. stop 조건 — tool 호출이 더 없으면 최종 답변 반환
+
+학생 작업 지점:
+- TODO 1: 두 번째 tool 추가 (Step 2)
+- TODO 2: @langfuse.observe 데코레이터로 Langfuse trace 활성화 (Step 3)
 """
 
 import os
@@ -8,6 +15,8 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+# Step 3에서 사용할 Langfuse 데코레이터.
 import langfuse
 
 load_dotenv()
@@ -21,12 +30,17 @@ GEMINI_INPUT_USD_PER_1M = 0.30
 GEMINI_OUTPUT_USD_PER_1M = 2.50
 
 
+# system prompt — 모델의 동작 규약. 비워두거나 잘못 쓰면 모델이 tool 결과를
+# 받고도 "확인하겠습니다 / 분석하겠습니다" 같은 punt로 끝낼 수 있음.
 SYSTEM_INSTRUCTION = (
     "당신은 사내 데이터 분석 어시스턴트입니다. "
     "사용자의 질문을 받으면 필요한 tool을 호출해 데이터를 가져온 뒤, "
     "그 즉시 데이터를 사용해 분석한 결과를 답변하세요. "
     "'확인하겠습니다', '분석하겠습니다' 같은 중간 안내 멘트 없이 "
-    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다."
+    "tool 결과를 받은 그 자리에서 바로 답변을 제공해야 합니다. "
+    "tool 결과에 데이터가 없으면 확인된 데이터가 없다고 답하고, "
+    "일반적인 패턴이나 추정 정보를 만들어내지 마세요. "
+    "원인, 영향, 해결책도 tool 결과에 없으면 단정하지 마세요."
 )
 
 
@@ -35,6 +49,7 @@ SYSTEM_INSTRUCTION = (
 # ============================================================
 
 def search_db(query: str) -> str:
+    """사내 DB 검색 (mock 구현)."""
     normalized = query.lower()
 
     production_summary = "최근 24시간: 5K logs · errors 0.2% · p95 latency 320ms"
@@ -58,6 +73,7 @@ def search_db(query: str) -> str:
         for keyword in ["u999", "존재하지", "로그인 이력", "login history"]
     )
 
+    # Golden set이 자연어/한국어로 질문해도 안정적으로 같은 mock 데이터를 반환.
     if asks_unknown_user:
         return "확인된 데이터 없음: 해당 user의 로그인 이력이 없습니다."
     if wants_production and wants_errors:
@@ -71,15 +87,14 @@ def search_db(query: str) -> str:
     return f"확인된 데이터 없음: '{query}'"
 
 
-# === TODO 1 정답 ===
-def get_user_info(user_id: str) -> str:
-    """user_id로 user 정보 조회 (mock)."""
-    mock_users = {
-        "u001": "name=Kim · team=Platform · role=Backend · joined=2024-03",
-        "u002": "name=Lee · team=Data · role=Analyst · joined=2025-01",
-        "u012": "name=Park · team=Platform · role=Frontend · joined=2025-08",
-    }
-    return mock_users.get(user_id, f"확인된 사용자 정보 없음: user_id='{user_id}'")
+# ------------------------------------------------------------
+# TODO 1 — Step 2: 두 번째 tool을 추가하세요.
+#
+# 예시: get_user_info(user_id: str) -> str
+#   1. 위 search_db 처럼 mock dict 기반 함수 정의
+#   2. 아래 TOOLS 배열에 FunctionDeclaration 추가
+#   3. HANDLERS dict에 함수 매핑 추가
+# ------------------------------------------------------------
 
 
 TOOLS: list[types.FunctionDeclaration] = [
@@ -97,36 +112,36 @@ TOOLS: list[types.FunctionDeclaration] = [
             required=["query"],
         ),
     ),
-    # === TODO 1 정답 ===
-    types.FunctionDeclaration(
-        name="get_user_info",
-        description="user_id로 사용자 정보 조회 (이름·팀·역할·입사일)",
-        parameters=types.Schema(
-            type=types.Type.OBJECT,
-            properties={
-                "user_id": types.Schema(
-                    type=types.Type.STRING,
-                    description="조회할 사용자 ID, 예: 'u001'",
-                ),
-            },
-            required=["user_id"],
-        ),
-    ),
+    # TODO 1 — 두 번째 tool의 FunctionDeclaration을 여기에
 ]
 
 HANDLERS = {
     "search_db": search_db,
-    # === TODO 1 정답 ===
-    "get_user_info": get_user_info,
+    # TODO 1 — 두 번째 tool의 함수 매핑을 여기에
 }
 
 
 # ============================================================
-# 2) ReAct loop  (TODO 2 정답: @langfuse.observe 활성화)
+# 2) ReAct loop
 # ============================================================
+
+# ------------------------------------------------------------
+# TODO 2 — Step 3: 아래 react_loop 함수에 @langfuse.observe() 데코레이터를 붙이세요.
+#
+# 데코레이터를 붙이면 Langfuse가 자동으로 입출력 + 시간을 기록합니다.
+# import는 파일 상단에 이미 준비돼 있습니다.
+#
+# 옵션: 데코레이터 안에서 span metadata 추가
+#   def react_loop(...):
+#       langfuse.get_client().update_current_span(
+#           metadata={"user_id": "your_nickname", "tags": ["day1"]},
+#       )
+#       ...
+# ------------------------------------------------------------
 
 
 def _last_text_preview(contents: list[types.Content]) -> str:
+    """Langfuse span에 넣을 작은 입력 preview."""
     for content in reversed(contents):
         for part in reversed(content.parts or []):
             if part.text:
@@ -137,6 +152,7 @@ def _last_text_preview(contents: list[types.Content]) -> str:
 
 
 def _response_preview(response) -> dict:
+    """Gemini 응답에서 trace에 유용한 최소 정보만 추출."""
     candidate = response.candidates[0]
     tool_calls = []
     text_parts = []
@@ -202,6 +218,9 @@ def _cost_details(usage_details: dict[str, int]) -> dict[str, float]:
     }
 
 
+# 관찰용 helper — Langfuse nested span을 예쁘게 보여주기 위한 코드입니다.
+# 학생 실습에서는 이 블록을 수정하지 않아도 됩니다. TODO는 위의 tool 추가와
+# 아래 react_loop의 parent @langfuse.observe 활성화 두 군데만 보면 됩니다.
 @langfuse.observe(
     name="llm.generate_content",
     as_type="generation",
@@ -214,6 +233,7 @@ def call_llm(
     config: types.GenerateContentConfig,
     step: int,
 ):
+    """LLM decide 단계. react_loop 아래 nested generation span으로 기록."""
     langfuse.get_client().update_current_generation(
         input={
             "step": step,
@@ -243,17 +263,14 @@ def call_llm(
 
 @langfuse.observe(name="tool.execute", as_type="tool")
 def execute_tool(tool_name: str, args: dict) -> str:
+    """Host application의 tool validation + 실행을 nested tool span으로 기록."""
     if tool_name not in HANDLERS:
         raise ValueError(f"Unknown tool: {tool_name}")
     return HANDLERS[tool_name](**args)
 
-
-@langfuse.observe()  # ← TODO 2 정답
+# @langfuse.observe()  ← TODO 2: 이 줄 주석 해제
 def react_loop(user_input: str, max_steps: int = 10) -> str:
-    langfuse.get_client().update_current_span(
-        metadata={"tags": ["day1", "solution"]},
-    )
-
+    """observe → decide → act → observe loop."""
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
     contents: list[types.Content] = [
@@ -276,6 +293,7 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
 
         response = call_llm(client, contents, config, step + 1)
 
+        # 모델 응답에서 function_call과 text 부분 분리
         candidate = response.candidates[0]
         function_calls = []
         text_parts: list[str] = []
@@ -285,13 +303,16 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
             elif part.text:
                 text_parts.append(part.text)
 
+        # tool 호출이 없으면 최종 답변
         if not function_calls:
             final = "\n".join(text_parts).strip()
             print(f"Final answer: {final[:200]}")
             return final
 
+        # assistant turn (function_call 포함)을 history에 추가
         contents.append(candidate.content)
 
+        # tool 실행 + 결과 추가
         for fc in function_calls:
             args = dict(fc.args) if fc.args else {}
             print(f"  → {fc.name}({args})")
@@ -314,8 +335,12 @@ def react_loop(user_input: str, max_steps: int = 10) -> str:
     raise RuntimeError(f"max_steps ({max_steps}) exceeded — no final answer")
 
 
+# ============================================================
+# 3) 실행
+# ============================================================
+
 if __name__ == "__main__":
-    sample_query = "u001 사용자 정보와 production logs를 함께 알려줘"
+    sample_query = "production logs를 분석해서 주요 에러 패턴을 알려줘"
     print(f"User: {sample_query}")
     try:
         answer = react_loop(sample_query)

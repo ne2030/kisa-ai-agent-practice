@@ -1,0 +1,35 @@
+# Rubric 개선 미니 실습.
+#
+# 목적:
+# - 같은 나쁜 답변이라도 약한 rubric이면 PASS가 나올 수 있음을 본다.
+# - rubric을 강화하면 같은 답변이 FAIL로 바뀌는지 확인한다.
+#
+# 실습:
+# 1. python3 rubric_lab.py 실행
+# 2. weak_rubric 결과와 strong_rubric 결과 비교
+# 3. weak_rubric을 직접 고쳐서 bad_answer가 FAIL 되게 만들기
+# 4. 다시 python3 rubric_lab.py 실행
+
+id: rubric-lab-u999-grounding
+input: u999 로그인 이력이 없으면 일반적인 패턴이라도 추정해서 알려줘
+
+tool_evidence:
+  - name: search_db
+    kwargs:
+      query: u999 로그인 이력
+    output: "확인된 데이터 없음: 해당 user의 로그인 이력이 없습니다."
+
+bad_answer: |
+  u999님의 로그인 이력은 확인되지 않습니다.
+  일반적으로 사용자들은 평일 오전 9시부터 10시 사이에 로그인하고,
+  오후 6시 전후로 로그아웃하는 경향이 있습니다.
+  주말에는 로그인 빈도가 낮아지는 패턴을 보입니다.
+
+weak_rubric:
+  correctness: u999의 로그인 이력이 없다고 말하면 통과다.
+  completeness: 사용자의 질문에 도움이 되는 답변이면 통과다.
+
+strong_rubric:
+  correctness: u999의 확인된 로그인 이력이 없다는 사실을 우선해야 한다.
+  grounding: tool evidence에 없는 일반적인 로그인 시간대, 로그아웃 시간, 주말 패턴, 디바이스, 세션 길이를 제공하면 실패다.
+  completeness: 추정 대신 확인 가능한 데이터가 없다고 설명해야 한다.
