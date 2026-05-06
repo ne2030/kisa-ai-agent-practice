@@ -1,8 +1,8 @@
-# Day 2 solution checkpoints
+# Day 2 checkpoints
 
-Day 1의 `solutions/`처럼 막혔을 때 비교하는 checkpoint입니다. Day 2는 한 파일이 아니라 graph/state/tool/guardrail/eval이 같이 움직이므로, 단계별 **패키지 폴더**로 제공합니다.
+Day 1의 `solutions/`처럼 단계별 checkpoint를 제공합니다. Day 2는 한 파일이 아니라 graph/state/tool/guardrail/eval이 같이 움직이므로, 단계별 **패키지 폴더**로 구성합니다.
 
-실행은 repo root에서 합니다. 기본값은 실제 Gemini LLM 호출이고, 정답 구조만 빠르게 확인할 때는 `--llm-mode mock`을 붙입니다.
+실행은 repo root에서 합니다. 기본값은 실제 Gemini LLM 호출이고, checkpoint 구조만 빠르게 확인할 때는 `--llm-mode mock`을 붙입니다.
 
 ```bash
 python -m day2_aicc.solutions.step01_baseline.app --scenario order_status
@@ -19,7 +19,7 @@ python -m day2_aicc.solutions.final.eval_day2 --compare-models --scenario refund
 | Step 2 guardrails | `solutions/step02_guardrails/` | 한국어 direct injection 패턴, HTML/base64 indirect 패턴, 배송지 변경 조건 강화 | input/context/action guard가 서로 다른 공격을 막는 위치 |
 | Step 3 cost routing | `solutions/step03_cost_routing/` | `auto` routing: 조회 cheap, 주소변경 standard, 환불/보상 strong | 모델 변경에 따른 cost/quality 차이 |
 | Step 4 eval 확장 | `solutions/step04_eval_extended/` | 교환 intent, 다른 고객 주문 차단 case, eval case 추가 | 새 업무를 graph/eval에 함께 추가하는 흐름 |
-| Final | `solutions/final/` | Step 4와 같은 최종 참고본 | 수업 후 전체 정답 비교 |
+| Final | `solutions/final/` | Step 4와 같은 최종 참고본 | 전체 흐름 비교 |
 
 ---
 
@@ -32,14 +32,14 @@ python -m day2_aicc.solutions.step01_baseline.app --scenario address_change_proc
 python -m day2_aicc.solutions.step01_baseline.app --scenario indirect_policy --policy cheap --guards off
 ```
 
-### Guardrail 정답 비교
+### Guardrail checkpoint 비교
 
 ```bash
 python -m day2_aicc.solutions.step02_guardrails.app --scenario direct_injection
 python -m day2_aicc.solutions.step02_guardrails.app --scenario indirect_policy --policy cheap --guards context,action
 ```
 
-### Cost routing 정답 비교
+### Cost routing checkpoint 비교
 
 ```bash
 python -m day2_aicc.solutions.step03_cost_routing.app --scenario order_status --policy auto --budget strict
@@ -51,7 +51,7 @@ python -m day2_aicc.solutions.step03_cost_routing.app --scenario compensation_de
 - `order_status` → cheap
 - `compensation_delay` → strong
 
-### Eval 확장 정답 비교
+### Eval 확장 checkpoint 비교
 
 ```bash
 python -m day2_aicc.solutions.step04_eval_extended.app --scenario exchange_recent
@@ -79,9 +79,9 @@ diff -ru day2_aicc day2_aicc/solutions/step04_eval_extended \
 
 ---
 
-## Instructor 사용 팁
+## 사용 팁
 
-- 수업 중에는 `solutions/`를 처음부터 열지 말고, 막히는 조가 생겼을 때 해당 step만 보여줍니다.
-- Step 2는 guardrail 실습 뒤에 공개하면 좋습니다.
-- Step 3은 비용 section 뒤에 공개하면 `cheap/standard/strong` 토론이 자연스럽습니다.
-- Step 4는 시간이 남는 조용 확장 과제로 쓰면 됩니다.
+- 처음부터 `solutions/`를 보지 말고, 막히는 지점에서 해당 step만 비교합니다.
+- Step 2는 guardrail 실습 뒤에 비교합니다.
+- Step 3은 비용 section 뒤에 비교하면 `cheap/standard/strong` 토론이 자연스럽습니다.
+- Step 4는 시간이 남을 때 확장 과제로 사용합니다.

@@ -196,13 +196,13 @@ python -m day2_aicc.app --scenario compensation_delay --policy auto --budget str
 | `tools.py` | 주문 조회, 배송지 변경, 환불, 쿠폰 tool |
 | `scenarios.py` | 수업용 scenario fixture |
 | `checkpoints/` | SQLite checkpoint 저장 위치 |
-| `solutions/` | 단계별 정답/checkpoint 패키지 |
+| `solutions/` | 단계별 checkpoint 패키지 |
 
 ---
 
 ## Solutions
 
-Day 1과 같은 용도로 `solutions/`를 제공합니다. Day 2는 여러 파일이 함께 바뀌므로 numbered package 형태입니다.
+Day 1과 같은 용도로 `solutions/` checkpoint를 제공합니다. Day 2는 여러 파일이 함께 바뀌므로 numbered package 형태입니다.
 
 ```bash
 python -m day2_aicc.solutions.step01_baseline.app --scenario order_status
