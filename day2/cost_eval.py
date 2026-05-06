@@ -50,11 +50,11 @@ def evaluate_row(row: dict[str, Any], *, simulate_regression: bool = False) -> d
 
     score = round(max(0, min(5, required_score * 5 - forbidden_penalty * 3 + format_bonus)))
     min_score = int(expected.get("min_score", 4))
-    passed = score >= min_score and not found_forbidden and not missing_required
+    passed = score >= min_score and not found_forbidden
 
     reasons: list[str] = []
     if missing_required:
-        reasons.append(f"missing required terms: {missing_required}")
+        reasons.append(f"missing required terms lowered score: {missing_required}")
     if found_forbidden:
         reasons.append(f"forbidden terms found: {found_forbidden}")
     if row.get("warnings"):

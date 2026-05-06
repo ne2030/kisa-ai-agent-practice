@@ -14,7 +14,7 @@ cd kisa-ai-agent-practice
 pip install -r requirements.txt
 ```
 
-실제 Gemini 호출을 쓰려면 `.env`에 `GEMINI_API_KEY`를 넣어요. 네트워크/API 문제 없이 구조만 볼 때는 `--llm-mode mock`을 붙여요.
+실습 기본값은 실제 Gemini 호출이에요. `.env`에 `GEMINI_API_KEY`를 넣고 실행해요. 네트워크나 quota 문제로 진행이 막힐 때만 `--llm-mode mock`을 fallback으로 붙여요.
 
 ---
 
@@ -37,21 +37,21 @@ sed -n '1,180p' day2/cost_golden_set.yaml
 ### 2) cheap 모델 실행
 
 ```bash
-python3 day2/cost_lab.py --llm-mode mock --profile cheap --prompt-style structured
+python3 day2/cost_lab.py --profile cheap --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
 ### 3) standard 모델로 바꿔서 실행
 
 ```bash
-python3 day2/cost_lab.py --llm-mode mock --profile standard --prompt-style structured
+python3 day2/cost_lab.py --profile standard --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
 ### 4) strong 모델로 바꿔서 실행
 
 ```bash
-python3 day2/cost_lab.py --llm-mode mock --profile strong --prompt-style structured
+python3 day2/cost_lab.py --profile strong --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
@@ -77,13 +77,13 @@ python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ### 5) prompt style 바꿔보기
 
 ```bash
-python3 day2/cost_lab.py --llm-mode mock --profile standard --prompt-style concise
+python3 day2/cost_lab.py --profile standard --prompt-style concise
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 
-python3 day2/cost_lab.py --llm-mode mock --profile standard --prompt-style detailed
+python3 day2/cost_lab.py --profile standard --prompt-style detailed
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 
-python3 day2/cost_lab.py --llm-mode mock --profile standard --prompt-style json
+python3 day2/cost_lab.py --profile standard --prompt-style json
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
@@ -143,13 +143,13 @@ python3 day2/cost_projection.py --report day2/reports/cost_latest.json --cache-h
 문제가 생기는 baseline과 guard를 켠 결과를 같이 봐요.
 
 ```bash
-python3 day2/security_lab.py --llm-mode mock --mode both
+python3 day2/security_lab.py --mode both
 ```
 
 Guarded 결과만 확인:
 
 ```bash
-python3 day2/security_lab.py --llm-mode mock --mode guarded
+python3 day2/security_lab.py --mode guarded
 ```
 
 다루는 케이스:

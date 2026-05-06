@@ -28,7 +28,7 @@
 1. `cost_lab.py`를 `--profile cheap`, `--profile standard`, `--profile strong` 순서로 하나씩 실행
 2. `cost_eval.py`로 golden dataset 기준 품질 점수 확인
 3. `cost_projection.py`로 월간 비용, prompt caching, batch 비율 확인
-4. `python3 day2/security_lab.py --llm-mode mock --mode both`로 baseline/guarded 비교
+4. `python3 day2/security_lab.py --mode both`로 baseline/guarded 비교
 5. `security_controls.py`의 TODO 수정
 6. reports markdown으로 전후 차이 확인
 
@@ -38,14 +38,14 @@
 
 ```bash
 pip install -r requirements.txt
-python3 day2/cost_lab.py --llm-mode mock --profile cheap --prompt-style structured
+python3 day2/cost_lab.py --profile cheap --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 python3 day2/cost_projection.py --report day2/reports/cost_latest.json
-python3 day2/security_lab.py --llm-mode mock --mode guarded
+python3 day2/security_lab.py --mode guarded
 ```
 
 Day 1은 Gemini/Langfuse key가 필요해요.
-Day 2 live mode는 Gemini key가 필요해요. mock mode는 key 없이 돌아가요.
+Day 2는 Gemini key로 live 실행해요. mock은 네트워크나 quota 문제가 있을 때만 fallback으로 써요.
 
 ---
 

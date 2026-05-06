@@ -5,7 +5,7 @@
 | 구분 | 위치 | 주제 | 실행 시작점 |
 |---|---|---|---|
 | Day 1 | `day1/` | 단일 ReAct Agent, tool loop, Langfuse trace, golden set 평가 | `cd day1 && python3 check_env.py` |
-| Day 2 | `day2/` | 모델 비용·eval·projection, security guardrail | `python3 day2/cost_lab.py --llm-mode mock --profile cheap` |
+| Day 2 | `day2/` | 모델 비용·eval·projection, security guardrail | `python3 day2/cost_lab.py --profile cheap` |
 
 기존 Day 1 자료는 `day1/`에 있어요. Day 2는 cost와 security 두 실습만 다뤄요.
 
@@ -44,13 +44,13 @@ open day1/INSTRUCTOR_GUIDE.md
 ## Day 2 빠른 시작
 
 ```bash
-python3 day2/cost_lab.py --llm-mode mock --profile cheap --prompt-style structured
+python3 day2/cost_lab.py --profile cheap --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 python3 day2/cost_projection.py --report day2/reports/cost_latest.json --cache-hit-rate 0.7
-python3 day2/security_lab.py --llm-mode mock --mode both
+python3 day2/security_lab.py --mode both
 ```
 
-Live Gemini 호출을 쓰려면 `.env`에 `GEMINI_API_KEY`를 넣고 `--llm-mode mock`을 빼요.
+Day 2는 기본적으로 live Gemini 호출을 써요. `.env`에 `GEMINI_API_KEY`가 필요해요.
 
 Day 2 guide:
 
