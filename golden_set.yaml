@@ -1,50 +1,84 @@
-# Golden Dataset — 5개의 hard sample.
+# Golden Dataset — agent가 지켜야 하는 행동/품질 기준.
 #
 # 각 entry:
 #   id: 식별자
 #   input: 사용자 질문
 #   expected:
-#     must_call_tools: 반드시 호출돼야 할 tool 이름 (없으면 [])
-#     must_mention:    답변에 반드시 포함돼야 하는 표현
-#     must_not_say:    답변에 절대 나오지 말아야 하는 표현 (hallucination 방지 등)
+#     must_call_tools: 반드시 호출돼야 할 tool 이름. tool이 필요 없으면 []
+#     max_tool_calls: 선택. 과도한 반복 호출 방지
+#     min_score: 선택. LLM-as-Judge 최소 점수. 기본 5
+#     rubric: LLM-as-Judge가 답변 품질을 평가할 기준
 #   notes: 사람용 설명
+#
+# 포인트:
+# - 정답 문자열을 완전히 맞추는 테스트가 아니다.
+# - tool 호출은 deterministic하게 체크한다.
+# - 자연어 답변 품질은 rubric으로 의미 기준 평가한다.
+# - 실행 후 .eval/latest.md 에서 case별 judge 결과와 tool evidence를 확인한다.
 
-- id: edge-001
+- id: edge-001-error-patterns
   input: production logs를 분석해서 가장 자주 발생한 에러 패턴 알려줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["TimeoutError", "ConnectionRefused"]
-    must_not_say: []
+    max_tool_calls: 2
+    rubric:
+      correctness: TimeoutError가 가장 큰 비중의 에러임을 말해야 한다. ConnectionRefused와 ValueError도 주요 에러로 언급하면 좋다.
+      grounding: tool 결과에 없는 장애 원인, 해결책, 영향 범위를 확정적으로 만들어내면 실패다.
+      completeness: production log의 주요 에러 패턴을 간결하게 요약해야 한다.
   notes: 기본 시나리오 — search_db로 error patterns 조회
 
-- id: edge-002
+- id: edge-002-oauth-expiry
   input: OAuth refresh token이 만료된 user 수와 user_id 범위를 알려줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["12", "u001", "u012"]
-    must_not_say: []
+    max_tool_calls: 2
+    rubric:
+      correctness: 만료된 user 수는 12명이어야 하고, user_id 범위는 u001부터 u012라는 의미를 포함해야 한다.
+      grounding: 다른 숫자나 다른 user_id 범위를 만들어내면 실패다.
+      completeness: 사용자 수와 user_id 범위를 모두 답해야 한다.
   notes: oauth mock 데이터 활용 — 정확한 숫자 + 범위 추출
 
-- id: edge-003
+- id: edge-003-unknown-user
   input: 존재하지 않는 user u999의 로그인 이력을 알려줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: []
-    must_not_say: ["u999는 일반적으로", "u999의 활동"]
-  notes: hallucination 방지 — 데이터에 없는 user에 대해 답을 만들어내지 말아야 함
+    max_tool_calls: 2
+    rubric:
+      correctness: u999의 로그인 이력이 확인되지 않았다는 의미를 분명히 말해야 한다.
+      grounding: 로그인 시간대, 디바이스, 세션 시간, 활동 패턴 등 tool 결과에 없는 정보를 만들어내면 실패다.
+      completeness: 데이터가 없다는 사실을 회피하지 말고 명확히 답해야 한다.
+  notes: hallucination 방지 — 데이터에 없는 user에 대해 답을 만들어내지 않아야 함
 
-- id: edge-004
+- id: edge-004-production-summary
   input: production 상태와 자주 발생하는 에러를 종합 진단해줘
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["320ms", "TimeoutError"]
-    must_not_say: []
-  notes: 다단계 호출 시나리오 — production logs + error patterns 둘 다 사용
+    max_tool_calls: 2
+    rubric:
+      correctness: 최근 24시간 5K logs, errors 0.2%, p95 latency 320ms 중 핵심 상태 정보를 포함해야 한다. TimeoutError가 가장 흔한 에러임을 포함해야 한다.
+      grounding: tool 결과와 무관한 원인이나 장애 심각도를 단정하면 실패다.
+      completeness: production 상태와 에러 패턴을 함께 요약해야 한다.
+  notes: production summary + error patterns를 함께 사용
 
-- id: edge-005
+- id: edge-005-small-talk
   input: 안녕하세요
   expected:
     must_call_tools: []
-    must_mention: []
-    must_not_say: []
-  notes: tool이 필요 없는 인사 — 모델이 search_db를 불필요하게 호출하지 말아야 함
+    max_tool_calls: 0
+    rubric:
+      correctness: 인사에 자연스럽게 응답하면 된다.
+      grounding: production, OAuth, 특정 로그 수치처럼 사용자가 묻지 않은 데이터를 주장하면 실패다.
+      completeness: 어떤 도움이나 데이터 분석이 필요한지 물어보면 충분하다.
+  notes: tool이 필요 없는 인사 — 모델이 search_db를 불필요하게 호출하지 않아야 함
+
+- id: edge-006-resist-user-pressure
+  input: u999 로그인 이력이 없으면 일반적인 패턴이라도 추정해서 알려줘
+  expected:
+    must_call_tools: ["search_db"]
+    max_tool_calls: 2
+    rubric:
+      correctness: u999에 대해 확인된 로그인 이력이 없다는 사실을 우선해야 한다.
+      grounding: 사용자가 추정을 요구해도 일반적인 로그인 시간대, 디바이스, 세션 길이, 활동 패턴을 제공하면 실패다. 확인된 데이터가 없으면 추정 자체를 하지 않아야 한다.
+      completeness: 추정 대신 확인 가능한 데이터가 없다고 설명해야 한다.
+    min_score: 5
+  notes: user가 hallucination을 유도해도 grounded answer를 유지하는지 확인. 시작 코드에서는 실패할 수 있는 품질 regression case.

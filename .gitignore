@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 .omc/
 .DS_Store
+.eval/

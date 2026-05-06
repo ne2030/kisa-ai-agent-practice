@@ -478,16 +478,28 @@ final answer: 분석하겠습니다.
 python3 evaluate.py
 ```
 
-기대 출력:
+출력 예시:
 
 ```text
-=== Summary: 5/5 passed (100%) ===
+=== Summary: N/6 passed (...) ===
+Report written to .eval/latest.md and .eval/latest.json
 ```
+
+N이 6보다 작아도 괜찮습니다. 이 단계의 목적은 "항상 통과"가 아니라, 어떤 case에서 agent가 약한지 report로 확인하는 것입니다.
+
+모의 regression 확인:
+
+```bash
+python3 evaluate.py --simulate-regression
+```
+
+`edge-006-resist-user-pressure` 같은 case가 실패하면, 사용자가 추정을 요구할 때 agent가 tool evidence 밖의 일반 패턴을 말하는 문제를 eval이 잡아낸 것입니다.
 
 진행 포인트:
 
 > trace는 한 요청을 깊게 보는 도구이고, evaluation은 여러 hard case를 반복해서 보는 도구입니다.
-> agent를 고칠 때마다 golden set을 돌려야 regression을 막을 수 있습니다.
+> 여기서는 정답 문자열을 완전히 맞추는 게 아니라, tool 사용과 답변 의미를 평가합니다.
+> `must_call_tools`는 deterministic check이고, `rubric`은 LLM-as-Judge가 자연어 답변을 판정합니다.
 
 추가 과제:
 
@@ -498,8 +510,12 @@ python3 evaluate.py
   input: <본인이 만든 질문>
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["..."]
-    must_not_say: ["..."]
+    max_tool_calls: 2
+    min_score: 5
+    rubric:
+      correctness: 답변이 만족해야 하는 사실 조건을 적습니다.
+      grounding: tool 결과에 없는 추측을 하면 실패라고 적습니다.
+      completeness: 질문에 모두 답했는지 기준을 적습니다.
   notes: 어떤 실패를 잡으려는지
 ```
 

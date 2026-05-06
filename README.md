@@ -178,13 +178,24 @@ python3 failures/lazy_response_demo.py     # 나쁜 system prompt → "분석하
 
 ## Step 5 · Golden Dataset 평가
 
-5개의 hard sample을 자동 평가합니다.
+`golden_set.yaml`의 case를 실행하고, 답변을 LLM-as-Judge로 평가합니다.
 
 ```bash
 python3 evaluate.py
 ```
 
-각 case의 `passed` 여부 + 이유 출력. Langfuse trace에서도 evaluate 실행 흔적이 보임.
+평가가 실제로 regression을 잡는지도 확인합니다. 아래 명령은 system prompt를 일시적으로 약하게 만들어, 데이터가 없을 때 추정하게 만드는 모의 regression입니다.
+
+```bash
+python3 evaluate.py --simulate-regression
+```
+
+평가는 다음 구성으로 동작합니다.
+
+1. `must_call_tools` — 어떤 tool을 호출했는지 deterministic하게 체크
+2. `rubric` — groundedness/correctness/completeness를 LLM-as-Judge로 의미 평가
+3. `--simulate-regression` — 나쁜 prompt 변경이 실제로 평가에서 걸리는지 확인
+4. `.eval/latest.md` — case별 tool evidence와 judge 판정 report 생성
 
 **기본:** `golden_set.yaml`에 본인 사례 1개 추가
 ```yaml
@@ -192,16 +203,24 @@ python3 evaluate.py
   input: <본인이 만든 질문>
   expected:
     must_call_tools: ["search_db"]
-    must_mention: ["..."]
-    must_not_say: ["..."]
+    max_tool_calls: 2
+    min_score: 5
+    rubric:
+      correctness: 답변이 만족해야 하는 사실 조건을 적습니다.
+      grounding: tool 결과에 없는 추측을 하면 실패라고 적습니다.
+      completeness: 질문에 모두 답했는지 기준을 적습니다.
   notes: 어떤 약점/edge case를 잡으려는지 메모
 ```
-재실행 → 추가한 case가 결과에 포함됐는지 확인.
 
-**옵션 (+):** rubric 수정
-- `evaluate.py`의 `check()` 함수를 더 엄격하게
-- 예: 답변 길이 제한, 특정 패턴 부재 검증, 또는 LLM-as-Judge 추가
-- 같은 case가 더 빡빡한 기준에서도 통과하는지 보기
+재실행:
+
+```bash
+python3 evaluate.py
+```
+
+포인트는 정답 문자열을 똑같이 맞추는 게 아니라, agent가 지켜야 할 행동 기준을 case와 rubric으로 누적하는 것입니다.
+실행 후 `.eval/latest.md`에서 어떤 tool evidence를 보고 judge가 PASS/FAIL을 냈는지 확인합니다.
+`--simulate-regression` 실행 결과와 baseline 결과를 비교하면, eval이 단순 실행이 아니라 regression guard 역할을 한다는 점을 볼 수 있습니다.
 
 ---
 
