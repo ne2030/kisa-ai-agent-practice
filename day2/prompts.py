@@ -1,6 +1,13 @@
 """Editable prompts and source texts for the two Day 2 labs."""
 
-COST_SYSTEM_PROMPT = """
+COST_PROMPT_STYLES = {
+    "concise": """
+너는 고객지원 운영 리더를 돕는 분석가야.
+아래 원문을 읽고 한국어로 3개 bullet만 써.
+각 bullet은 한 문장으로 끝내.
+근거에 없는 내용은 쓰지 마.
+""".strip(),
+    "structured": """
 너는 고객지원 운영 리더를 돕는 분석가야.
 아래 원문을 읽고 한국어로 간결하게 요약해.
 출력 형식:
@@ -9,7 +16,36 @@ COST_SYSTEM_PROMPT = """
 3. 원인 후보
 4. 바로 할 다음 조치
 5. 확실하지 않은 내용
-""".strip()
+근거에 없는 내용은 확정하지 마.
+""".strip(),
+    "detailed": """
+너는 고객지원 운영 리더를 돕는 분석가야.
+아래 원문을 읽고 운영 회의에 바로 공유할 수 있게 자세히 정리해.
+반드시 포함할 내용:
+- 핵심 요약
+- 고객별 이슈
+- 정책/운영 근거
+- 리스크
+- 바로 할 다음 조치
+- 아직 확인이 필요한 내용
+근거에 없는 내용은 확정하지 마.
+""".strip(),
+    "json": """
+너는 고객지원 운영 리더를 돕는 분석가야.
+아래 원문을 읽고 JSON만 출력해.
+스키마:
+{
+  "summary": ["...", "...", "..."],
+  "customer_impact": ["..."],
+  "cause_candidates": ["..."],
+  "next_actions": ["..."],
+  "unknowns": ["..."]
+}
+근거에 없는 내용은 unknowns에 넣어.
+""".strip(),
+}
+
+COST_SYSTEM_PROMPT = COST_PROMPT_STYLES["structured"]
 
 COST_INPUT_TEXT = """
 [고객지원 티켓 묶음]

@@ -9,7 +9,7 @@
 | Day | 자료 | 목표 |
 |---|---|---|
 | Day 1 | `day1/INSTRUCTOR_GUIDE.md` | 단일 ReAct loop, tool 추가, Langfuse trace, failure diagnosis, golden set |
-| Day 2 | `day2/INSTRUCTOR_GUIDE.md` | 모델 비용 비교, security guardrail before/after |
+| Day 2 | `day2/INSTRUCTOR_GUIDE.md` | 모델 비용 비교, golden eval, 월간 projection, security guardrail before/after |
 
 ---
 
@@ -25,11 +25,12 @@
 
 ### Day 2
 
-1. `python3 day2/cost_lab.py --llm-mode mock`으로 모델별 비용/latency 비교
-2. `prompts.py`에서 system prompt와 input 수정
-3. `python3 day2/security_lab.py --llm-mode mock --mode both`로 baseline/guarded 비교
-4. `security_controls.py`의 TODO 수정
-5. reports markdown으로 전후 차이 확인
+1. `cost_lab.py`를 `--profile cheap`, `--profile standard`, `--profile strong` 순서로 하나씩 실행
+2. `cost_eval.py`로 golden dataset 기준 품질 점수 확인
+3. `cost_projection.py`로 월간 비용, prompt caching, batch 비율 확인
+4. `python3 day2/security_lab.py --llm-mode mock --mode both`로 baseline/guarded 비교
+5. `security_controls.py`의 TODO 수정
+6. reports markdown으로 전후 차이 확인
 
 ---
 
@@ -37,7 +38,9 @@
 
 ```bash
 pip install -r requirements.txt
-python3 day2/cost_lab.py --llm-mode mock
+python3 day2/cost_lab.py --llm-mode mock --profile cheap --prompt-style structured
+python3 day2/cost_eval.py --report day2/reports/cost_latest.json
+python3 day2/cost_projection.py --report day2/reports/cost_latest.json
 python3 day2/security_lab.py --llm-mode mock --mode guarded
 ```
 
@@ -51,4 +54,4 @@ Day 2 live mode는 Gemini key가 필요해요. mock mode는 key 없이 돌아가
 | 세션 | 시간 | 내용 |
 |---|---:|---|
 | Day 1 | 60분 | 단일 Agent loop + observability + evaluation |
-| Day 2 | 60분 | Cost 비교 + Security guardrail |
+| Day 2 | 60분 | Cost 비교/eval/projection + Security guardrail |

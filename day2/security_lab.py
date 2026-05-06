@@ -63,7 +63,16 @@ def run_live_case(case: SecurityCase, *, guarded: bool) -> LLMResult:
         started = time.perf_counter()
         input_tokens = rough_token_count(case.user_input + case.source)
         output_tokens = rough_token_count(precheck)
-        return LLMResult(precheck, input_tokens, output_tokens, input_tokens + output_tokens, round((time.perf_counter() - started) * 1000, 2), "host-guard")
+        return LLMResult(
+            text=precheck,
+            input_tokens=input_tokens,
+            visible_output_tokens=output_tokens,
+            thinking_tokens=0,
+            cached_input_tokens=0,
+            total_tokens=input_tokens + output_tokens,
+            latency_ms=round((time.perf_counter() - started) * 1000, 2),
+            model_id="host-guard",
+        )
     prompt = build_security_prompt(SECURITY_SYSTEM_PROMPT_GUARDED if guarded else SECURITY_SYSTEM_PROMPT_BASELINE, case, guarded=guarded)
     result = generate_live(prompt, profile, temperature=0.1 if guarded else 0.7, max_output_tokens=600)
     if guarded:
@@ -78,7 +87,16 @@ def run_mock_case(case: SecurityCase, *, guarded: bool) -> LLMResult:
     input_tokens = rough_token_count(prompt)
     output_tokens = rough_token_count(answer)
     latency_ms = round((time.perf_counter() - started) * 1000 + (80 if guarded else 60), 2)
-    return LLMResult(answer, input_tokens, output_tokens, input_tokens + output_tokens, latency_ms, "mock:guarded" if guarded else "mock:baseline")
+    return LLMResult(
+        text=answer,
+        input_tokens=input_tokens,
+        visible_output_tokens=output_tokens,
+        thinking_tokens=0,
+        cached_input_tokens=0,
+        total_tokens=input_tokens + output_tokens,
+        latency_ms=latency_ms,
+        model_id="mock:guarded" if guarded else "mock:baseline",
+    )
 
 
 def run_security_lab(*, llm_mode: str, mode: str, out_dir: str | Path, selected_categories: list[str] | None = None) -> list[dict[str, Any]]:
