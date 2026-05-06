@@ -38,7 +38,7 @@
 
 ```bash
 pip install -r requirements.txt
-python -m day2_aicc.app --scenario order_status
+python3 day2_aicc/app.py --scenario order_status
 ```
 
 Day 1은 Gemini/Langfuse key가 필요합니다.

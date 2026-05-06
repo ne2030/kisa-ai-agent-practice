@@ -50,13 +50,13 @@ pip install -r requirements.txt
 Day 2 기본값은 실제 Gemini LLM 호출입니다. `.env`에 `GEMINI_API_KEY`가 필요합니다.
 
 ```bash
-python -m day2_aicc.app --scenario order_status
+python3 day2_aicc/app.py --scenario order_status
 ```
 
 API key나 네트워크 문제를 분리해서 구조만 확인할 때는 mock mode를 씁니다.
 
 ```bash
-python -m day2_aicc.app --scenario order_status --llm-mode mock
+python3 day2_aicc/app.py --scenario order_status --llm-mode mock
 ```
 
 정상 출력에서 볼 것:
@@ -95,8 +95,8 @@ sed -n '350,430p' day2_aicc/graph.py
 ## 8–15분 · Baseline run + trace 읽기
 
 ```bash
-python -m day2_aicc.app --scenario order_status
-python -m day2_aicc.app --scenario address_change_processing
+python3 day2_aicc/app.py --scenario order_status
+python3 day2_aicc/app.py --scenario address_change_processing
 ```
 
 결과에서 볼 것:
@@ -122,12 +122,12 @@ sed -n '1,140p' day2_aicc/tools.py
 ## 15–23분 · Checkpoint와 state 복구
 
 ```bash
-python -m day2_aicc.app \
+python3 day2_aicc/app.py \
   --scenario refund_recent \
   --thread-id demo-refund \
   --interrupt-after retrieve_policy
 
-python -m day2_aicc.app \
+python3 day2_aicc/app.py \
   --resume \
   --thread-id demo-refund
 ```
@@ -157,10 +157,10 @@ sed -n '385,430p' day2_aicc/graph.py
 먼저 위험한 비교를 실행합니다.
 
 ```bash
-python -m day2_aicc.app --scenario address_change_shipped --policy cheap --guards on --llm-mode mock
-python -m day2_aicc.app --scenario address_change_shipped --policy cheap --guards off --llm-mode mock
-python -m day2_aicc.app --scenario refund_old --policy cheap --guards on --llm-mode mock
-python -m day2_aicc.app --scenario refund_old --policy cheap --guards off --llm-mode mock
+python3 day2_aicc/app.py --scenario address_change_shipped --policy cheap --guards on --llm-mode mock
+python3 day2_aicc/app.py --scenario address_change_shipped --policy cheap --guards off --llm-mode mock
+python3 day2_aicc/app.py --scenario refund_old --policy cheap --guards on --llm-mode mock
+python3 day2_aicc/app.py --scenario refund_old --policy cheap --guards off --llm-mode mock
 ```
 
 결과에서 볼 것:
@@ -189,15 +189,15 @@ sed -n '120,175p' day2_aicc/guardrails.py
 Direct injection:
 
 ```bash
-python -m day2_aicc.app --scenario direct_injection --guards on
-python -m day2_aicc.app --scenario direct_injection --guards off
+python3 day2_aicc/app.py --scenario direct_injection --guards on
+python3 day2_aicc/app.py --scenario direct_injection --guards off
 ```
 
 Indirect injection:
 
 ```bash
-python -m day2_aicc.app --scenario indirect_policy --policy cheap --guards off --llm-mode mock
-python -m day2_aicc.app --scenario indirect_policy --policy cheap --guards context,action --llm-mode mock
+python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards off --llm-mode mock
+python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards context,action --llm-mode mock
 ```
 
 공격 흐름:
@@ -229,8 +229,8 @@ sed -n '120,180p' day2_aicc/mock_data.py
 ## 45–55분 · Safety metrics / model cost
 
 ```bash
-python -m day2_aicc.eval_day2 --compare-models --llm-mode mock
-python -m day2_aicc.eval_day2 --include-unguarded --policies cheap --llm-mode mock
+python3 day2_aicc/eval_day2.py --compare-models --llm-mode mock
+python3 day2_aicc/eval_day2.py --include-unguarded --policies cheap --llm-mode mock
 cat .eval/day2_eval_latest.md
 ```
 

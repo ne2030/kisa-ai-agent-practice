@@ -5,9 +5,9 @@ Day 1의 `solutions/`처럼 단계별 checkpoint를 제공합니다. Day 2는 �
 실행은 repo root에서 합니다. 기본값은 실제 Gemini LLM 호출이고, checkpoint 구조만 빠르게 확인할 때는 `--llm-mode mock`을 붙입니다.
 
 ```bash
-python -m day2_aicc.solutions.step01_baseline.app --scenario order_status
-python -m day2_aicc.solutions.final.eval_day2 --compare-models --scenario refund_old
-python -m day2_aicc.solutions.final.eval_day2 --include-unguarded --policies cheap --llm-mode mock
+python3 day2_aicc/solutions/step01_baseline/app.py --scenario order_status
+python3 day2_aicc/solutions/final/eval_day2.py --compare-models --scenario refund_old
+python3 day2_aicc/solutions/final/eval_day2.py --include-unguarded --policies cheap --llm-mode mock
 ```
 
 ---
@@ -29,22 +29,22 @@ python -m day2_aicc.solutions.final.eval_day2 --include-unguarded --policies che
 ### Baseline 동작
 
 ```bash
-python -m day2_aicc.solutions.step01_baseline.app --scenario address_change_processing
-python -m day2_aicc.solutions.step01_baseline.app --scenario indirect_policy --policy cheap --guards off
+python3 day2_aicc/solutions/step01_baseline/app.py --scenario address_change_processing
+python3 day2_aicc/solutions/step01_baseline/app.py --scenario indirect_policy --policy cheap --guards off
 ```
 
 ### Guardrail checkpoint 비교
 
 ```bash
-python -m day2_aicc.solutions.step02_guardrails.app --scenario direct_injection
-python -m day2_aicc.solutions.step02_guardrails.app --scenario indirect_policy --policy cheap --guards context,action
+python3 day2_aicc/solutions/step02_guardrails/app.py --scenario direct_injection
+python3 day2_aicc/solutions/step02_guardrails/app.py --scenario indirect_policy --policy cheap --guards context,action
 ```
 
 ### Cost routing checkpoint 비교
 
 ```bash
-python -m day2_aicc.solutions.step03_cost_routing.app --scenario order_status --policy auto --budget strict
-python -m day2_aicc.solutions.step03_cost_routing.app --scenario compensation_delay --policy auto --budget strict
+python3 day2_aicc/solutions/step03_cost_routing/app.py --scenario order_status --policy auto --budget strict
+python3 day2_aicc/solutions/step03_cost_routing/app.py --scenario compensation_delay --policy auto --budget strict
 ```
 
 기대 흐름:
@@ -55,9 +55,9 @@ python -m day2_aicc.solutions.step03_cost_routing.app --scenario compensation_de
 ### Eval 확장 checkpoint 비교
 
 ```bash
-python -m day2_aicc.solutions.step04_eval_extended.app --scenario exchange_recent
-python -m day2_aicc.solutions.step04_eval_extended.app --scenario cross_customer_order
-python -m day2_aicc.solutions.step04_eval_extended.eval_day2 --compare-models --scenario exchange_recent
+python3 day2_aicc/solutions/step04_eval_extended/app.py --scenario exchange_recent
+python3 day2_aicc/solutions/step04_eval_extended/app.py --scenario cross_customer_order
+python3 day2_aicc/solutions/step04_eval_extended/eval_day2.py --compare-models --scenario exchange_recent
 ```
 
 ---

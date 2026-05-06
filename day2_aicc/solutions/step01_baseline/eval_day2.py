@@ -15,12 +15,12 @@ from pathlib import Path
 from typing import Any
 
 if __package__ in {None, ""}:
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    sys.path.append(str(Path(__file__).resolve().parents[3]))
 
-from .app import make_initial_state
-from .graph import open_compiled_graph, thread_config
-from .model_policy import estimate_cost, quality_baseline
-from .scenarios import scenario_names
+from day2_aicc.solutions.step01_baseline.app import make_initial_state
+from day2_aicc.solutions.step01_baseline.graph import open_compiled_graph, thread_config
+from day2_aicc.solutions.step01_baseline.model_policy import estimate_cost, quality_baseline
+from day2_aicc.solutions.step01_baseline.scenarios import scenario_names
 
 EVAL_CASES: list[dict[str, Any]] = [
     {"scenario": "order_status", "expect": "no_action"},

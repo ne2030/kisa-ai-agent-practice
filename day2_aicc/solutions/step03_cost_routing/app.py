@@ -10,11 +10,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-if __package__ in {None, ""}:  # Allows `python day2_aicc/app.py` from repo root.
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+if __package__ in {None, ""}:  # Allows `python3 day2_aicc/app.py` from repo root.
+    sys.path.append(str(Path(__file__).resolve().parents[3]))
 
-from .graph import DEFAULT_CHECKPOINT_DB, open_compiled_graph, thread_config
-from .scenarios import get_scenario, scenario_names
+from day2_aicc.solutions.step03_cost_routing.graph import DEFAULT_CHECKPOINT_DB, open_compiled_graph, thread_config
+from day2_aicc.solutions.step03_cost_routing.scenarios import get_scenario, scenario_names
 
 NODES = [
     "input_guard",
@@ -94,7 +94,7 @@ def print_result(state: dict[str, Any], *, show_state: bool = False, pending_nex
     print(f"attack         : {result['attack']}")
     if pending_next:
         print(f"checkpoint     : paused before {', '.join(pending_next)}")
-        print(f"resume command : python -m day2_aicc.app --resume --thread-id {result['thread_id']}")
+        print(f"resume command : python3 day2_aicc/solutions/step03_cost_routing/app.py --resume --thread-id {result['thread_id']}")
     print(f"blocked        : {result['blocked']} {result['blocked_by'] or ''}")
     if result["block_reason"]:
         print(f"reason         : {result['block_reason']}")

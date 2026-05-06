@@ -78,7 +78,7 @@ def route_model_for_intent(intent: IntentName, budget_mode: str = "normal") -> M
     TODO-D2-06: 비용 실습 확장 지점.
     - strict budget일 때는 조회성 intent를 cheap으로 보내고
     - 환불/보상/action intent는 standard 이상으로 올리는 정책을 직접 바꿔본다.
-    - 변경 후 `python -m day2_aicc.eval_day2 --compare-models`로 품질/비용 차이를 확인한다.
+    - 변경 후 `python3 day2_aicc/solutions/step02_guardrails/eval_day2.py --compare-models`로 품질/비용 차이를 확인한다.
     """
     if budget_mode == "strict" and intent in {"order_status", "delivery_status"}:
         return "cheap"
