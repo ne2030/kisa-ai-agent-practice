@@ -5,8 +5,7 @@ __pycache__/
 .omc/
 .DS_Store
 .eval/
-day2_aicc/checkpoints/*.sqlite*
-day2_aicc/reports/*.json
-day2_aicc/reports/*.md
+day2/reports/*.json
+day2/reports/*.md
 .omx/
 gemini.txt

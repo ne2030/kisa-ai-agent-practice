@@ -5,10 +5,9 @@
 | 구분 | 위치 | 주제 | 실행 시작점 |
 |---|---|---|---|
 | Day 1 | `day1/` | 단일 ReAct Agent, tool loop, Langfuse trace, golden set 평가 | `cd day1 && python3 check_env.py` |
-| Day 2 | `day2_aicc/` | AICC/e-commerce Agent, LangGraph, checkpoint, guardrails, cost 비교 | `python3 day2_aicc/app.py --scenario order_status` |
+| Day 2 | `day2/` | 모델 비용 비교, security guardrail | `python3 day2/cost_lab.py --llm-mode mock` |
 
-기존 Day 1 자료는 `day1/`로 옮겨뒀어요. 루트에는 전체 과정 안내와 공통 dependency만 남겨뒀어요.
-Day 2 checkpoint는 `day2_aicc/solutions/`에 있어요.
+기존 Day 1 자료는 `day1/`에 있어요. Day 2는 cost와 security 두 실습만 다뤄요.
 
 ---
 
@@ -34,62 +33,27 @@ python3 agent.py "production logs 상태 요약해줘"
 python3 evaluate.py
 ```
 
-Day 1 instructor guide:
+Day 1 guide:
 
 ```bash
 open day1/INSTRUCTOR_GUIDE.md
 ```
 
-> 루트의 `.env`를 이미 만들었다면 `cp ../.env .env`로 Day 1 폴더에 복사해도 돼요.
-
 ---
 
 ## Day 2 빠른 시작
 
-Day 2는 기본값으로 실제 Gemini LLM을 호출해요. `GEMINI_API_KEY`가 필요하고, 오프라인 구조 검증이 필요할 때만 `--llm-mode mock`을 써요. 처음에는 `day2_aicc/CODE_WALKTHROUGH.md`를 같이 열어두면 코드 흐름을 따라가기 좋아요.
-
 ```bash
-python3 day2_aicc/app.py --scenario order_status
-python3 day2_aicc/app.py --scenario address_change_processing
-python3 day2_aicc/app.py --scenario direct_injection
-python3 day2_aicc/eval_day2.py --compare-models
+python3 day2/cost_lab.py --llm-mode mock
+python3 day2/security_lab.py --llm-mode mock --mode both
 ```
 
-Day 2 instructor guide:
+Live Gemini 호출을 쓰려면 `.env`에 `GEMINI_API_KEY`를 넣고 `--llm-mode mock`을 빼요.
+
+Day 2 guide:
 
 ```bash
-open day2_aicc/INSTRUCTOR_GUIDE.md
-```
-
----
-
-## Day 2 핵심 실험
-
-### Checkpoint / resume
-
-```bash
-python3 day2_aicc/app.py \
-  --scenario refund_recent \
-  --thread-id demo-refund-1 \
-  --interrupt-after retrieve_policy
-
-python3 day2_aicc/app.py \
-  --resume \
-  --thread-id demo-refund-1
-```
-
-### Guardrail 비교
-
-```bash
-python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards off
-python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards context,action
-```
-
-### Cost / model policy 비교
-
-```bash
-python3 day2_aicc/eval_day2.py --compare-models
-cat .eval/day2_eval_latest.md
+open day2/INSTRUCTOR_GUIDE.md
 ```
 
 ---
@@ -98,9 +62,9 @@ cat .eval/day2_eval_latest.md
 
 ```text
 .
-├── day1/                 # 기존 Day 1 실습
-├── day2_aicc/            # Day 2 LangGraph AICC 실습
-├── requirements.txt      # Day 1 + Day 2 공통 dependency
+├── day1/                 # Day 1 실습
+├── day2/                 # Day 2 cost/security 실습
+├── requirements.txt      # 공통 dependency
 ├── README.md             # 전체 안내
 └── INSTRUCTOR_GUIDE.md   # 전체 진행 허브
 ```
