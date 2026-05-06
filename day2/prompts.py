@@ -1,4 +1,4 @@
-"""Editable prompts and source texts for the two Day 2 labs."""
+"""2일차 실습에서 수정해볼 프롬프트와 입력 데이터."""
 
 COST_PROMPT_STYLES = {
     "concise": """

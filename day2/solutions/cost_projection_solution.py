@@ -1,4 +1,4 @@
-"""Reference runner for the Day 2 cost projection."""
+"""2일차 비용 추정 참고 실행 파일."""
 
 from __future__ import annotations
 

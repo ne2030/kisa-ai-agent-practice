@@ -1,7 +1,6 @@
-"""Model profiles and workshop cost estimates for Day 2 cost lab.
+"""2일차 비용 실습용 모델 설정과 비용 추정값.
 
-The numbers mirror the public Gemini Developer API pricing page enough for
-classroom estimation. Always verify provider pricing before production use.
+수업 중 계산 흐름을 보기 위한 가격표예요. 실제 운영 전에는 제공자 가격표를 다시 확인해요.
 """
 
 from __future__ import annotations
@@ -63,7 +62,6 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         cache_read_usd_per_1m=0.125,
         cache_storage_usd_per_1m_hour=4.50,
         expected_style="비싸지만 원인/리스크/다음 조치를 더 꼼꼼히 분리하는 요약",
-        # Gemini 2.5 Pro는 thinking off가 안 돼요. 낮은 budget으로 실습 출력 토큰을 확보해요.
         default_thinking_budget=128,
     ),
 }
@@ -91,10 +89,10 @@ def estimate_cost_usd(
     cache_storage_tokens: int = 0,
     cache_storage_hours: float = 0,
 ) -> float:
-    """Estimate request cost from token counts.
+    """토큰 수로 요청 비용을 추정해요.
 
-    output_tokens should already include visible output + thinking tokens.
-    cached_input_tokens means cache-hit input tokens charged at cache read price.
+    출력 토큰에는 화면에 보이는 답변과 사고 과정 토큰이 함께 들어가요.
+    캐시 입력 토큰은 캐시가 적용된 입력 토큰 수예요.
     """
 
     cached_input_tokens = max(0, min(cached_input_tokens, input_tokens))

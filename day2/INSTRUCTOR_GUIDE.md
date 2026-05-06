@@ -57,7 +57,7 @@ sed -n '1,160p' day2/README.md
 
 ## 5–15분 · Cost model 직접 비교
 
-여기서는 한 번에 여러 모델을 자동 비교하지 않아요. 하나 실행하고 eval을 보고, 그 다음 profile만 바꿔요.
+아래 순서대로 profile을 바꿔 실행하고, 실행마다 eval 결과를 확인해요.
 
 ```bash
 python3 day2/cost_lab.py --profile cheap --prompt-style structured
@@ -190,12 +190,12 @@ sed -n '1,260p' day2/security_lab.py
 
 ---
 
-## 50–57분 · Security TODO
+## 50–57분 · Security 수정 실습
 
 하나씩 바꿔요.
 
-1. `security_controls.py`의 `TODO-D2-SEC-01` 아래에 계정번호 regex 추가
-2. `security_controls.py`의 `TODO-D2-SEC-02` 아래에 한국어 우회 문구 추가
+1. `security_controls.py`의 `실습-보안-01` 아래에 계정번호 regex 추가
+2. `security_controls.py`의 `실습-보안-02` 아래에 한국어 우회 문구 추가
 3. `prompts.py`의 guarded prompt에 “근거 문서에 없는 내용은 확정하지 말 것” 문구 강화
 
 재실행:

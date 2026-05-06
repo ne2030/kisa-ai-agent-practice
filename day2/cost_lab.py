@@ -1,11 +1,7 @@
-"""Day 2 Lab 1: run one cost experiment at a time.
+"""2일차 비용 실습 실행 파일.
 
-Students intentionally change one variable per run:
-- case
-- model profile
-- prompt style
-
-Then cost_eval.py scores the saved output against the golden dataset.
+케이스, 모델 설정, 프롬프트 스타일을 실행 인자로 받아 결과 리포트를 저장해요.
+cost_eval.py는 저장된 결과를 기준 데이터셋으로 평가해요.
 """
 
 from __future__ import annotations
@@ -16,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-if __package__ in {None, ""}:  # Allows `python3 day2/cost_lab.py` from repo root.
+if __package__ in {None, ""}:  # 저장소 루트에서 `python3 day2/cost_lab.py`로 실행할 수 있게 해요.
     sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from day2.cost_dataset import default_case_id, get_cost_case, load_cost_cases
@@ -157,9 +153,9 @@ def print_row(row: dict[str, Any]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run one model/prompt cost experiment and save a report")
-    parser.add_argument("--case", default=default_case_id(), help="Golden case id from day2/cost_golden_set.yaml")
-    parser.add_argument("--profile", choices=profile_names(), default="cheap", help="One profile to run: cheap, standard, strong")
+    parser = argparse.ArgumentParser(description="모델과 프롬프트 조건을 실행하고 비용 리포트 저장")
+    parser.add_argument("--case", default=default_case_id(), help="day2/cost_golden_set.yaml의 case id")
+    parser.add_argument("--profile", choices=profile_names(), default="cheap", help="실행할 profile: cheap, standard, strong")
     parser.add_argument("--prompt-style", choices=sorted(COST_PROMPT_STYLES), default="structured")
     parser.add_argument("--llm-mode", choices=["live", "mock"], default=os.getenv("DAY2_LLM_MODE", "live"))
     parser.add_argument("--out-dir", default="day2/reports")

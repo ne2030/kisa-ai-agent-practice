@@ -1,4 +1,4 @@
-"""Report helpers for Day 2 labs."""
+"""2일차 리포트 저장 헬퍼."""
 
 from __future__ import annotations
 

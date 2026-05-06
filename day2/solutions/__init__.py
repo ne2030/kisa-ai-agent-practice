@@ -1,1 +1,1 @@
-"""Reference wrappers for Day 2 labs."""
+"""2일차 실습 참고 실행 파일."""

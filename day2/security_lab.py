@@ -1,4 +1,4 @@
-"""Day 2 Lab 2: show security failures, then compare guarded behavior."""
+"""2일차 보안 실습 실행 파일."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-if __package__ in {None, ""}:  # Allows `python3 day2/security_lab.py` from repo root.
+if __package__ in {None, ""}:  # 저장소 루트에서 `python3 day2/security_lab.py`로 실행할 수 있게 해요.
     sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from day2.llm_client import LLMResult, rough_token_count, generate_live
@@ -150,11 +150,11 @@ def render_markdown(rows: list[dict[str, Any]], *, llm_mode: str, mode: str) -> 
         lines.extend([f"### {row['mode']} · {row['category']} · {row['title']}", "", f"체크 포인트: {row['failure_to_notice']}", "", row["answer"], ""])
     lines.extend(
         [
-            "## TODO 위치",
+            "## 수정 위치",
             "",
-            "- `security_controls.py`의 `TODO-D2-SEC-01`: PII 패턴 추가",
-            "- `security_controls.py`의 `TODO-D2-SEC-02`: prompt injection 패턴 추가",
-            "- `prompts.py`의 guarded system prompt: 근거 기반 답변 규칙 수정",
+            "- `security_controls.py`의 `실습-보안-01`: PII 패턴 추가",
+            "- `security_controls.py`의 `실습-보안-02`: 프롬프트 인젝션 패턴 추가",
+            "- `prompts.py`의 guarded 시스템 프롬프트: 근거 기반 답변 규칙 수정",
         ]
     )
     return "\n".join(lines) + "\n"

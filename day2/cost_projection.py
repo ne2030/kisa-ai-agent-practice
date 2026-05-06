@@ -1,4 +1,4 @@
-"""Estimate monthly cost impact of model choice, prompt caching, and batch."""
+"""모델 선택, 프롬프트 캐싱, 배치 처리의 월간 비용 영향을 추정해요."""
 
 from __future__ import annotations
 
@@ -130,9 +130,9 @@ def render_markdown(result: dict[str, Any]) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Estimate monthly cost with caching and batch knobs")
-    parser.add_argument("--report", default="day2/reports/cost_latest.json", help="Use token counts from cost_lab report")
-    parser.add_argument("--profile", choices=profile_names(), default=None, help="Override profile from report")
+    parser = argparse.ArgumentParser(description="캐싱과 배치 비율을 반영해 월간 비용 추정")
+    parser.add_argument("--report", default="day2/reports/cost_latest.json", help="cost_lab 리포트의 token 수 사용")
+    parser.add_argument("--profile", choices=profile_names(), default=None, help="리포트의 profile 대신 사용할 profile")
     parser.add_argument("--daily-requests", type=int, default=3000)
     parser.add_argument("--business-days", type=int, default=22)
     parser.add_argument("--input-tokens", type=int, default=None)

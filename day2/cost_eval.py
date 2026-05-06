@@ -1,4 +1,4 @@
-"""Evaluate a cost lab output against the Day 2 golden dataset."""
+"""비용 실습 결과를 기준 데이터셋으로 평가해요."""
 
 from __future__ import annotations
 
@@ -142,10 +142,10 @@ def render_markdown(results: list[dict[str, Any]], *, report_path: str, mode: st
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate cost_lab output with the golden dataset")
+    parser = argparse.ArgumentParser(description="cost_lab 결과를 기준 데이터셋으로 평가")
     parser.add_argument("--report", default="day2/reports/cost_latest.json")
     parser.add_argument("--out-dir", default="day2/reports")
-    parser.add_argument("--simulate-regression", action="store_true", help="Replace output with a bad answer to show eval failure")
+    parser.add_argument("--simulate-regression", action="store_true", help="평가 실패 예시를 보기 위해 나쁜 답변으로 바꿔 평가")
     return parser.parse_args()
 
 

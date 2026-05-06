@@ -1,1 +1,1 @@
-"""Day 2 practice: cost comparison and security guardrails."""
+"""2일차 실습: 비용 평가와 보안 가드레일."""

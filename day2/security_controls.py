@@ -1,6 +1,6 @@
-"""Small guardrails for Day 2 security lab.
+"""2일차 보안 실습용 간단한 가드레일.
 
-The fixes are intentionally simple so they can be edited during a short lab.
+짧은 실습 안에서 직접 고쳐볼 수 있게 단순한 형태로 뒀어요.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import re
 PII_PATTERNS = [
     re.compile(r"01[016789]-?\d{3,4}-?\d{4}"),
     re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
-    # TODO-D2-SEC-01: 주민번호, 계정번호 같은 패턴을 하나 더 추가해 봐요.
+    # 실습-보안-01: 주민번호, 계정번호 같은 패턴을 하나 더 추가해 봐요.
 ]
 
 PROMPT_INJECTION_PATTERNS = [
@@ -18,7 +18,7 @@ PROMPT_INJECTION_PATTERNS = [
     re.compile(r"system\s+prompt", re.I),
     re.compile(r"보안\s*검사.*통과"),
     re.compile(r"이전\s*지시.*무시"),
-    # TODO-D2-SEC-02: 한국어 role-play 우회 문구를 하나 더 추가해 봐요.
+    # 실습-보안-02: 한국어 역할놀이 우회 문구를 하나 더 추가해 봐요.
 ]
 
 ALLOWED_TOPIC_KEYWORDS = ["주문", "배송", "반품", "환불", "쿠폰", "고객", "상담", "ORD-"]

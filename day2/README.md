@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ## Lab 1 · Cost 비교
 
-한 번에 여러 모델을 자동으로 돌리지 않아요. 하나 실행하고, 결과를 보고, 다음 값을 바꿔서 다시 실행해요.
+아래 순서대로 profile을 바꿔 실행하고, 실행마다 결과와 eval 리포트를 확인해요.
 
 ### 1) case 확인
 
@@ -163,8 +163,8 @@ python3 day2/security_lab.py --mode guarded
 
 수정해볼 곳:
 
-- `security_controls.py`의 `TODO-D2-SEC-01`: PII 패턴 추가
-- `security_controls.py`의 `TODO-D2-SEC-02`: prompt injection 패턴 추가
+- `security_controls.py`의 `실습-보안-01`: PII 패턴 추가
+- `security_controls.py`의 `실습-보안-02`: prompt injection 패턴 추가
 - `prompts.py`의 `SECURITY_SYSTEM_PROMPT_GUARDED`: 근거 기반 답변 규칙 수정
 
 ---
@@ -178,7 +178,7 @@ python3 day2/security_lab.py --mode guarded
 | 15–25분 | Cost prompt | `concise`, `detailed`, `json` 중 하나씩 바꿔 실행 |
 | 25–35분 | Cost projection | 월간 비용, caching, batch 비율 바꿔 보기 |
 | 35–50분 | Security lab | baseline 실패와 guarded 결과 비교 |
-| 50–57분 | Security TODO | PII/prompt injection 패턴 하나씩 추가하고 재실행 |
+| 50–57분 | Security 수정 실습 | PII/prompt injection 패턴 하나씩 추가하고 재실행 |
 | 57–60분 | 정리 | 어떤 모델을 어디에 쓰고, 어떤 guard를 둘지 정리 |
 
 ---

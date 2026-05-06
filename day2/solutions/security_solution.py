@@ -1,6 +1,6 @@
-"""Reference runner for the Day 2 security lab.
+"""2일차 보안 실습 참고 실행 파일.
 
-Defaults to guarded mode so the reference run shows the solved state.
+기본값은 guarded 모드예요.
 """
 
 from __future__ import annotations

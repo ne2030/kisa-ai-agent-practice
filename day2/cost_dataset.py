@@ -1,4 +1,4 @@
-"""Golden cases for the Day 2 cost/eval lab."""
+"""2일차 비용 평가 실습용 기준 케이스."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Small Gemini/mock client used by the Day 2 labs."""
+"""2일차 실습에서 쓰는 모델 호출 코드예요."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class LLMResult:
 
 
 def rough_token_count(text: str) -> int:
-    # Good enough for workshop comparison. Live mode uses provider token counts.
+    # 실습용 대략치예요. 실제 호출에서는 제공자가 반환한 토큰 수를 사용해요.
     return max(1, len(text) // 3)
 
 
@@ -122,7 +122,7 @@ def generate_live(prompt: str, profile: ModelProfile, *, temperature: float = 0.
             contents=prompt,
             config=config,
         )
-    except Exception as exc:  # Keep workshop CLI output readable.
+    except Exception as exc:  # 실습 중 명령줄 에러가 길게 터지지 않게 정리해요.
         message = str(exc)
         if "API key expired" in message or "API_KEY_INVALID" in message:
             raise RuntimeError("Gemini live call failed: API key가 만료됐어요. 새 key를 .env에 넣거나 --llm-mode mock으로 실행해요.") from exc

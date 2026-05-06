@@ -1,4 +1,4 @@
-"""Security cases for Day 2 Lab 2."""
+"""2일차 보안 실습 케이스."""
 
 from __future__ import annotations
 
