@@ -1,4 +1,15 @@
-"""LangGraph workflow for the Day 2 AICC/e-commerce agent."""
+"""LangGraph workflow for the Day 2 AICC/e-commerce agent.
+
+The important LangGraph idea in this file:
+
+1. `StateGraph(AICCState)` says every node reads and writes the same state shape.
+2. Each node function receives the current state and returns only the fields it
+   wants to update.
+3. `build_graph()` connects the node names with edges. The node names printed in
+   `risk_events` are the same names used here.
+4. `open_compiled_graph()` adds a SQLite checkpointer, so a `thread_id` can pause
+   after one node and resume from the next node.
+"""
 
 from __future__ import annotations
 
@@ -77,6 +88,11 @@ def blocked_or_continue(state: AICCState) -> str:
 
 
 def triage_node(state: AICCState) -> dict[str, Any]:
+    """Classify the request before any business action is considered.
+
+    This is deliberately simple string matching so the lab can focus on graph
+    structure. In a production service this could be a cheap classifier model.
+    """
     message = state.get("message", "")
     intent = _parse_intent(message)
     selected_policy = state.get("model_policy") or "standard"
@@ -93,6 +109,11 @@ def triage_node(state: AICCState) -> dict[str, Any]:
 
 
 def load_context_node(state: AICCState) -> dict[str, Any]:
+    """Load trusted business context with read-only tools.
+
+    This node is also the data-boundary checkpoint: even if the user mentions a
+    valid order ID, the order must belong to the current `user_id`.
+    """
     order_id = state.get("order_id", "")
     if not order_id:
         return block(state, reason="order_id missing", layer="context_loader")
@@ -130,6 +151,12 @@ def load_context_node(state: AICCState) -> dict[str, Any]:
 
 
 def retrieve_policy_node(state: AICCState) -> dict[str, Any]:
+    """Retrieve policy documents that the specialist will read.
+
+    The indirect-injection scenario appends an external poisoned document here.
+    That makes the threat concrete: the user did not type the attack, but the
+    model may still see it through retrieved context.
+    """
     policy = resolve_policy(state.get("model_policy"))
     max_docs = policy.max_policy_docs
     if state.get("budget_mode") == "strict":
@@ -292,6 +319,7 @@ def mock_specialist_node(state: AICCState) -> dict[str, Any]:
 
 
 def specialist_node(state: AICCState) -> dict[str, Any]:
+    """Choose between deterministic mock behavior and the live Gemini call."""
     if state.get("llm_mode", "live") == "mock":
         return mock_specialist_node(state)
     try:
@@ -303,6 +331,11 @@ def specialist_node(state: AICCState) -> dict[str, Any]:
 
 
 def execute_action_node(state: AICCState) -> dict[str, Any]:
+    """Run approved write tools.
+
+    All risky business changes should arrive here only after `action_guard`.
+    Keeping execution in one node makes it easy to audit what actually happened.
+    """
     if state.get("blocked"):
         return {"risk_events": _risk(state, "execute_action:skipped_blocked")}
 
@@ -327,6 +360,7 @@ def execute_action_node(state: AICCState) -> dict[str, Any]:
 
 
 def final_review_node(state: AICCState) -> dict[str, Any]:
+    """Build the final customer-facing answer and attach a cost estimate."""
     if state.get("blocked"):
         final = (
             "요청을 그대로 처리할 수 없습니다. "
@@ -355,6 +389,11 @@ def final_review_node(state: AICCState) -> dict[str, Any]:
 
 
 def build_graph(checkpointer: Any | None = None):
+    """Wire the workflow.
+
+    Read this function first when LangGraph feels abstract. The graph is not
+    hidden inside the framework; it is this list of named nodes and edges.
+    """
     builder = StateGraph(AICCState)
     builder.add_node("input_guard", input_guard_node)
     builder.add_node("triage", triage_node)

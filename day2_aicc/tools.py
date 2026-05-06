@@ -21,6 +21,8 @@ def _err(message: str) -> dict[str, Any]:
 
 
 def get_order(order_id: str) -> dict[str, Any]:
+    # Read-only tool: safe to call before an action decision, but still subject
+    # to data-boundary checks in graph.py::load_context_node().
     order = ORDERS.get(order_id)
     if not order:
         return _err(f"unknown order_id: {order_id}")
@@ -28,6 +30,7 @@ def get_order(order_id: str) -> dict[str, Any]:
 
 
 def get_customer(customer_id: str) -> dict[str, Any]:
+    # Read-only tool.
     customer = CUSTOMERS.get(customer_id)
     if not customer:
         return _err(f"unknown customer_id: {customer_id}")
@@ -35,6 +38,7 @@ def get_customer(customer_id: str) -> dict[str, Any]:
 
 
 def get_shipment(order_id: str) -> dict[str, Any]:
+    # Read-only tool.
     shipment = SHIPMENTS.get(order_id)
     if not shipment:
         return _err(f"unknown shipment for order_id: {order_id}")
@@ -42,6 +46,8 @@ def get_shipment(order_id: str) -> dict[str, Any]:
 
 
 def retrieve_policy(intent: str, *, include_poisoned: bool = False, max_docs: int = 2) -> dict[str, Any]:
+    # Read-only retrieval. The returned text is not automatically trusted; it
+    # still goes through guardrails.py::sanitize_policy_docs().
     docs = [dict(doc) for doc in POLICY_DOCS.get(intent, POLICY_DOCS["unknown"])[:max_docs]]
     if include_poisoned:
         # The poisoned doc is appended after normal retrieval so strict budgets still
@@ -51,6 +57,7 @@ def retrieve_policy(intent: str, *, include_poisoned: bool = False, max_docs: in
 
 
 def update_shipping_address(order_id: str, new_address: str) -> dict[str, Any]:
+    # Write tool: should only run after guardrails.py::action_guard_node().
     order = ORDERS.get(order_id)
     if not order:
         return _err(f"unknown order_id: {order_id}")
@@ -66,6 +73,7 @@ def update_shipping_address(order_id: str, new_address: str) -> dict[str, Any]:
 
 
 def cancel_order(order_id: str) -> dict[str, Any]:
+    # Write tool: money movement, so action_guard must approve first.
     order = ORDERS.get(order_id)
     if not order:
         return _err(f"unknown order_id: {order_id}")
@@ -73,6 +81,7 @@ def cancel_order(order_id: str) -> dict[str, Any]:
 
 
 def create_return_request(order_id: str, reason: str) -> dict[str, Any]:
+    # Write tool: refund path, so action_guard checks delivery window first.
     order = ORDERS.get(order_id)
     if not order:
         return _err(f"unknown order_id: {order_id}")
@@ -80,6 +89,7 @@ def create_return_request(order_id: str, reason: str) -> dict[str, Any]:
 
 
 def issue_coupon(customer_id: str, amount_krw: int, reason: str) -> dict[str, Any]:
+    # Write tool: direct value transfer, so action_guard checks tier/delay/limit.
     customer = CUSTOMERS.get(customer_id)
     if not customer:
         return _err(f"unknown customer_id: {customer_id}")
@@ -94,6 +104,7 @@ def issue_coupon(customer_id: str, amount_krw: int, reason: str) -> dict[str, An
 
 
 def create_support_ticket(customer_id: str, order_id: str, reason: str) -> dict[str, Any]:
+    # Low-risk write tool: creates a review ticket instead of changing order/money.
     ts = datetime.combine(TODAY, datetime.min.time()).isoformat()
     return _ok(
         {

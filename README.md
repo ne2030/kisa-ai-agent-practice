@@ -1,14 +1,14 @@
 # KISA AI Agent Practice
 
-강의 실습 repo를 Day 1 / Day 2 구조로 나눴습니다.
+강의 실습 repo를 Day 1 / Day 2 구조로 나눠뒀어요.
 
 | 구분 | 위치 | 주제 | 실행 시작점 |
 |---|---|---|---|
 | Day 1 | `day1/` | 단일 ReAct Agent, tool loop, Langfuse trace, golden set 평가 | `cd day1 && python3 check_env.py` |
 | Day 2 | `day2_aicc/` | AICC/e-commerce Agent, LangGraph, checkpoint, guardrails, cost 비교 | `python3 day2_aicc/app.py --scenario order_status` |
 
-기존 Day 1 자료는 `day1/`로 옮겨 두었습니다. 루트에는 전체 과정 안내와 공통 dependency만 남깁니다.
-Day 2 checkpoint는 `day2_aicc/solutions/`에 있습니다.
+기존 Day 1 자료는 `day1/`로 옮겨뒀어요. 루트에는 전체 과정 안내와 공통 dependency만 남겨뒀어요.
+Day 2 checkpoint는 `day2_aicc/solutions/`에 있어요.
 
 ---
 
@@ -20,7 +20,7 @@ source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Codespaces/devcontainer를 쓰면 `requirements.txt` 설치가 자동으로 실행됩니다.
+Codespaces/devcontainer를 쓰면 `requirements.txt` 설치가 자동으로 실행돼요.
 
 ---
 
@@ -40,13 +40,13 @@ Day 1 instructor guide:
 open day1/INSTRUCTOR_GUIDE.md
 ```
 
-> 루트의 `.env`를 이미 만들었다면 `cp ../.env .env`로 Day 1 폴더에 복사해도 됩니다.
+> 루트의 `.env`를 이미 만들었다면 `cp ../.env .env`로 Day 1 폴더에 복사해도 돼요.
 
 ---
 
 ## Day 2 빠른 시작
 
-Day 2는 기본값으로 실제 Gemini LLM을 호출합니다. `GEMINI_API_KEY`가 필요하고, 오프라인 구조 검증이 필요할 때만 `--llm-mode mock`을 씁니다.
+Day 2는 기본값으로 실제 Gemini LLM을 호출해요. `GEMINI_API_KEY`가 필요하고, 오프라인 구조 검증이 필요할 때만 `--llm-mode mock`을 써요. 처음에는 `day2_aicc/CODE_WALKTHROUGH.md`를 같이 열어두면 코드 흐름을 따라가기 좋아요.
 
 ```bash
 python3 day2_aicc/app.py --scenario order_status

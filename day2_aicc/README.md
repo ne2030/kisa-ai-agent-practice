@@ -1,6 +1,6 @@
 # Day 2 실습 — AICC/e-commerce Agent 운영 설계
 
-Day 1에서 만든 단일 ReAct loop 다음 단계입니다. Day 2는 고객응대 Agent를 작은 운영 시스템처럼 구성합니다.
+Day 1에서 만든 단일 ReAct loop 다음 단계예요. Day 2는 고객응대 Agent를 작은 운영 시스템처럼 구성해요.
 
 - LangGraph `StateGraph`로 상담 흐름 분리
 - SQLite checkpoint로 중단/재개 확인
@@ -18,7 +18,9 @@ cd kisa-ai-agent-practice
 pip install -r requirements.txt
 ```
 
-Day 2는 기본값으로 실제 Gemini LLM을 호출합니다. `GEMINI_API_KEY`를 `.env`에 넣어야 합니다. 네트워크/API 문제를 분리해서 graph·guardrail 구조만 확인할 때는 `--llm-mode mock`을 사용합니다.
+Day 2는 기본값으로 실제 Gemini LLM을 호출해요. `GEMINI_API_KEY`를 `.env`에 넣어야 해요. 네트워크/API 문제를 분리해서 graph·guardrail 구조만 확인할 때는 `--llm-mode mock`을 써요.
+
+처음 10분은 커맨드만 실행하지 말고 `CODE_WALKTHROUGH.md`를 같이 열어둬요. 실행 결과 맨 아래에 `code path`가 나오고, 그 순서대로 파일을 열면 “왜 이 답이 나왔는지”를 바로 따라갈 수 있어요.
 
 ---
 
@@ -47,11 +49,32 @@ python3 day2_aicc/eval_day2.py --compare-models --scenario refund_old
 python3 day2_aicc/eval_day2.py --include-unguarded --policies cheap --llm-mode mock
 ```
 
-평가 리포트는 `.eval/day2_eval_latest.md`와 `.eval/day2_eval_latest.json`에 저장됩니다.
+평가 리포트는 `.eval/day2_eval_latest.md`와 `.eval/day2_eval_latest.json`에 저장돼요.
 
 ---
 
-## Graph 흐름
+## 첫 실행을 코드로 따라가기
+
+```bash
+python3 day2_aicc/app.py --scenario order_status --llm-mode mock
+```
+
+이 요청은 조회형 요청이라 쓰기 action이 없어야 해요. 결과에서 볼 값과 코드 위치를 같이 봐요.
+
+| 출력 | 코드 위치 | 왜 그렇게 나오는지 |
+|---|---|---|
+| `scenario: order_status` | `scenarios.py::SCENARIOS` | 실습 fixture의 메시지와 `user_id`를 가져와요. |
+| `intent/order: order_status / ORD-1001` | `graph.py::triage_node()` | `_parse_intent()`가 “주문” 문구를 보고 `order_status`로 분류하고, 정규식으로 주문번호를 뽑아요. |
+| `actions: (none)` | `graph.py::mock_specialist_node()` 또는 `live_llm.py::live_specialist_node()` | 주문 조회는 읽기 응답이라 `proposed_actions`가 비어 있어요. |
+| `risk events` | 각 node의 `_risk()` / `append_event()` | graph가 지나온 node 기록이에요. `action_guard:no_action`이면 실행할 쓰기 tool이 없었다는 뜻이에요. |
+| `cost estimate` | `model_policy.py::estimate_cost()` | system prompt/tool schema는 caching 후보로, 요청별 context는 일반 input으로 잡아 비용을 추정해요. |
+| `code path` | `app.py::code_path_lines()` | 다음에 열어볼 파일 순서예요. |
+
+더 자세한 코드 읽기 순서는 [`CODE_WALKTHROUGH.md`](./CODE_WALKTHROUGH.md)에 정리해뒀어요.
+
+---
+
+## LangGraph 흐름
 
 ```text
 input_guard
@@ -63,6 +86,20 @@ input_guard
   -> action_guard
   -> execute_action
   -> final_review
+```
+
+LangGraph에서 볼 핵심은 세 가지예요.
+
+- `state.py::AICCState`: 모든 node가 공유하는 상담 상태
+- `graph.py::*_node()`: state를 읽고 일부 필드만 업데이트하는 함수
+- `graph.py::build_graph()`: node 순서와 차단 분기 정의
+
+`build_graph()`를 먼저 보면 LangGraph가 덜 추상적으로 보여요. framework가 알아서 흐름을 숨기는 게 아니라, 아래 코드처럼 직접 node와 edge를 등록해요.
+
+```python
+builder.add_node("triage", triage_node)
+builder.add_edge("triage", "load_context")
+builder.add_conditional_edges("action_guard", blocked_or_continue, ...)
 ```
 
 레이어별 역할:
@@ -79,7 +116,7 @@ input_guard
 
 ## 코드 구조 먼저 보기
 
-Day 2는 명령어 실행보다 코드 구조를 읽는 시간이 더 중요합니다. 요청 하나가 어떤 파일을 지나는지 먼저 확인합니다.
+Day 2는 명령어 실행보다 코드 구조를 읽는 시간이 더 중요해요. 요청 하나가 어떤 파일을 지나는지 먼저 확인해요.
 
 | 파일 | 역할 | 읽을 위치 |
 |---|---|---|
@@ -105,7 +142,7 @@ sed -n '1,120p' day2_aicc/guardrails.py
 
 ## Checkpoint 실습
 
-중간 node 뒤에서 멈춘 뒤 같은 `thread_id`로 재개합니다.
+중간 node 뒤에서 멈춘 뒤 같은 `thread_id`로 재개해요.
 
 ```bash
 python3 day2_aicc/app.py \
@@ -130,19 +167,19 @@ python3 day2_aicc/app.py \
 
 | 시간 | 파트 | 실습 내용 |
 |---:|---|---|
-| 0–8분 | Code map | `app.py` → `state.py` → `graph.py` 흐름 확인 |
-| 8–15분 | Baseline trace | 조회 요청과 쓰기 action 요청의 trace 차이 비교 |
-| 15–23분 | Checkpoint | state 저장/재개, `--show-state`로 저장 내용 확인 |
-| 23–34분 | Tool boundary | 배송지 변경·환불 guard 조건 수정 |
-| 34–45분 | Guardrail attack | direct / indirect injection payload와 layer별 차단 비교 |
-| 45–55분 | Safety metrics / cost | ASR/FPR/Utility/Latency/Coverage gap + model cost 확인 |
-| 55–60분 | Mini challenge | 새 scenario + eval case 추가, 리포트 공유 |
+| 0–10분 | LangGraph map | `CODE_WALKTHROUGH.md` 기준으로 `StateGraph`, node, edge, checkpoint 개념 확인 |
+| 10–18분 | First trace | `order_status` 실행 후 `risk events`와 `code path`를 따라 `app.py` → `graph.py` → `tools.py` 확인 |
+| 18–27분 | Checkpoint | `--interrupt-after`, `--resume`, `--show-state`로 저장되는 state와 재개 위치 확인 |
+| 27–39분 | Tool boundary | 배송지 변경·환불 케이스에서 `proposed_actions`와 `action_guard` 조건 수정 |
+| 39–50분 | Guardrail attack | direct / indirect injection payload가 어느 layer에서 막히는지 비교하고 패턴 추가 |
+| 50–57분 | Safety metrics / cost | ASR/FPR/Utility/Latency/Coverage gap + model cost + prompt caching 후보 확인 |
+| 57–60분 | Mini challenge | 새 scenario 또는 eval case 하나 추가하고 리포트 변화 확인 |
 
 ---
 
 ## 필수 TODO 세트
 
-작업량이 너무 작아지지 않도록 12개를 준비했습니다. 시간이 부족하면 1–8을 필수, 9–12를 확장으로 진행합니다.
+작업량이 너무 작아지지 않도록 12개를 준비했어요. 시간이 부족하면 1–8을 필수, 9–12를 확장으로 진행해요.
 
 ### A. Graph / routing
 
@@ -228,7 +265,7 @@ python3 day2_aicc/app.py --scenario compensation_delay --policy auto --budget st
 
 ## Solutions
 
-Day 1과 같은 용도로 `solutions/` checkpoint를 제공합니다. Day 2는 여러 파일이 함께 바뀌므로 numbered package 형태입니다.
+Day 1과 같은 용도로 `solutions/` checkpoint를 제공해요. Day 2는 여러 파일이 함께 바뀌므로 numbered package 형태예요.
 
 ```bash
 python3 day2_aicc/solutions/step01_baseline/app.py --scenario order_status
@@ -237,4 +274,4 @@ python3 day2_aicc/solutions/step03_cost_routing/app.py --scenario compensation_d
 python3 day2_aicc/solutions/step04_eval_extended/eval_day2.py --compare-models
 ```
 
-자세한 내용은 `day2_aicc/solutions/README.md`를 참고합니다.
+자세한 내용은 `day2_aicc/solutions/README.md`를 참고해요.

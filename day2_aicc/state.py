@@ -1,4 +1,10 @@
-"""Shared state shape for the Day 2 LangGraph practice."""
+"""Shared state shape for the Day 2 LangGraph practice.
+
+LangGraph passes one state object from node to node. A node returns a partial
+dictionary, and LangGraph merges that patch into this state. When something
+looks confusing in the terminal output, find the same field name here first,
+then search which node writes it.
+"""
 
 from __future__ import annotations
 
@@ -43,7 +49,7 @@ class CostBreakdown(TypedDict, total=False):
 
 
 class AICCState(TypedDict, total=False):
-    # Request / runtime options
+    # Request / runtime options: created in app.py::make_initial_state().
     thread_id: str
     scenario: str
     user_id: str
@@ -54,7 +60,8 @@ class AICCState(TypedDict, total=False):
     budget_mode: Literal["normal", "strict"]
     attack_mode: Literal["none", "direct", "indirect"]
 
-    # Parsed / loaded context
+    # Parsed / loaded context: filled by graph.py::triage_node() and
+    # graph.py::load_context_node().
     intent: IntentName
     order_id: str
     requested_address: str
@@ -64,7 +71,7 @@ class AICCState(TypedDict, total=False):
     policy_docs: list[dict[str, Any]]
     sanitized_policy_docs: list[dict[str, Any]]
 
-    # Decisions / safety
+    # Decisions / safety: used to explain why a request continued or stopped.
     blocked: bool
     block_reason: str
     blocked_by: str
@@ -74,7 +81,8 @@ class AICCState(TypedDict, total=False):
     executed_actions: list[ToolCall]
     tool_trace: list[ToolCall]
 
-    # Output / metrics
+    # Output / metrics: printed by app.py::print_result() and aggregated by
+    # eval_day2.py.
     answer_draft: str
     final_answer: str
     cost: CostBreakdown

@@ -1,4 +1,9 @@
-"""CLI runner for Day 2 AICC LangGraph practice."""
+"""CLI runner for the Day 2 AICC LangGraph practice.
+
+This file is intentionally small: it only converts a scenario/CLI command into
+the first LangGraph state, runs the graph, then prints the state back in a form
+that is easy to trace through the code.
+"""
 
 from __future__ import annotations
 
@@ -35,6 +40,13 @@ DIRECT_ATTACK_SUFFIX = (
 
 
 def make_initial_state(args: argparse.Namespace) -> dict[str, Any]:
+    """Create the first state object that enters `graph.py::build_graph()`.
+
+    LangGraph nodes do not receive separate positional arguments. Each node gets
+    the current state dictionary and returns a small patch to merge into it. That
+    is why runtime options (`model_policy`, `guard_mode`) and business data
+    (`message`, `user_id`) start together here.
+    """
     scenario = get_scenario(args.scenario)
     message = args.message or scenario["message"]
     attack_mode = scenario.get("attack_mode", "none") if args.attack == "scenario" else args.attack
@@ -83,7 +95,43 @@ def compact_result(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def print_result(state: dict[str, Any], *, show_state: bool = False, pending_next: tuple[str, ...] = ()) -> None:
+def code_path_lines(state: dict[str, Any]) -> list[str]:
+    """Return the source files to read after a CLI run.
+
+    The output is part of the lab experience: after running a scenario, the
+    next step is to open the files listed here and connect each printed field to
+    the node that produced it.
+    """
+    scenario = state.get("scenario", "<custom>")
+    specialist = "graph.py -> mock_specialist_node()" if state.get("llm_mode") == "mock" else "live_llm.py -> live_specialist_node()"
+    lines = [
+        f"1. scenarios.py -> SCENARIOS['{scenario}']에서 요청 문장과 user_id를 가져와요.",
+        "2. app.py -> make_initial_state()가 CLI 옵션을 AICCState 초기값으로 만들어요.",
+        "3. graph.py -> build_graph()에 적힌 node 순서대로 state가 이동해요.",
+        "4. guardrails.py -> input_guard_node()가 사용자 메시지의 direct injection을 먼저 봐요.",
+        "5. graph.py -> triage_node()가 intent/order_id/requested_address를 채워요.",
+        "6. graph.py -> load_context_node()가 tools.py의 조회 tool로 주문·고객·배송 정보를 가져와요.",
+        "7. graph.py -> retrieve_policy_node()와 guardrails.py -> sanitize_policy_docs()가 정책 문서를 넣고 외부 payload를 걸러요.",
+        f"8. {specialist}가 답변 초안과 proposed_actions를 만들어요.",
+        "9. guardrails.py -> action_guard_node()가 proposed_actions를 실행해도 되는지 검사해요.",
+        "10. graph.py -> execute_action_node()/final_review_node()가 tool 실행, 최종 답변, 비용 추정을 마무리해요.",
+    ]
+    if state.get("blocked"):
+        lines.append(f"차단 지점: {state.get('blocked_by')} · reason은 block_reason 필드에서 확인해요.")
+    elif state.get("executed_actions"):
+        lines.append("쓰기 action이 실행됐어요. tools.py의 해당 함수와 guardrails.py::validate_action()을 같이 봐요.")
+    else:
+        lines.append("쓰기 action이 없어요. 조회형 요청에서는 specialist가 답변만 만들고 action_guard는 no_action으로 지나가요.")
+    return lines
+
+
+def print_result(
+    state: dict[str, Any],
+    *,
+    show_state: bool = False,
+    show_code_path: bool = True,
+    pending_next: tuple[str, ...] = (),
+) -> None:
     result = compact_result(state)
     print("\n=== Day 2 AICC run ===")
     print(f"thread_id      : {result['thread_id']}")
@@ -106,6 +154,10 @@ def print_result(state: dict[str, Any], *, show_state: bool = False, pending_nex
     print("\nrisk events:")
     for event in result["risk_events"]:
         print(f"- {event}")
+    if show_code_path:
+        print("\ncode path:")
+        for line in code_path_lines(state):
+            print(f"- {line}")
     if show_state:
         print("\nraw state:")
         print(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True))
@@ -125,6 +177,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--interrupt-after", choices=NODES, help="Pause after a node to demonstrate checkpoint/resume")
     parser.add_argument("--resume", action="store_true", help="Resume an interrupted thread_id")
     parser.add_argument("--show-state", action="store_true")
+    parser.add_argument("--hide-code-path", action="store_true", help="Hide the source-file reading guide in the output")
     return parser.parse_args()
 
 
@@ -139,7 +192,7 @@ def main() -> None:
             if not snapshot.values:
                 raise SystemExit(f"No checkpoint found for thread_id={args.thread_id}")
             if not snapshot.next:
-                print_result(dict(snapshot.values), show_state=args.show_state)
+                print_result(dict(snapshot.values), show_state=args.show_state, show_code_path=not args.hide_code_path)
                 print("\nNo pending node remains for this thread.")
                 return
             try:
@@ -150,7 +203,7 @@ def main() -> None:
                     raise SystemExit(f"Live LLM call failed. Check GEMINI_API_KEY, or rerun with --llm-mode mock. Detail: {message}") from exc
                 raise
             snapshot = graph.get_state(config)
-            print_result(state, show_state=args.show_state, pending_next=tuple(snapshot.next))
+            print_result(state, show_state=args.show_state, show_code_path=not args.hide_code_path, pending_next=tuple(snapshot.next))
             return
 
         state = make_initial_state(args)
@@ -166,7 +219,7 @@ def main() -> None:
                 raise SystemExit(f"Live LLM call failed. Check GEMINI_API_KEY, or rerun with --llm-mode mock. Detail: {message}") from exc
             raise
         snapshot = graph.get_state(config)
-        print_result(output, show_state=args.show_state, pending_next=tuple(snapshot.next))
+        print_result(output, show_state=args.show_state, show_code_path=not args.hide_code_path, pending_next=tuple(snapshot.next))
 
 
 if __name__ == "__main__":
