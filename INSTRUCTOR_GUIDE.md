@@ -1,6 +1,6 @@
-# KISA AI Agent Practice — Instructor Hub
+# KISA AI Agent Practice — Course Guide
 
-이 문서는 전체 실습 진행 허브입니다. 세부 진행안은 각 Day 폴더의 guide를 사용합니다.
+이 문서는 전체 실습 안내입니다. 세부 진행안은 각 Day 폴더의 guide를 사용합니다.
 
 ---
 

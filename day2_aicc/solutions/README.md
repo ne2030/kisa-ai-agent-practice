@@ -7,6 +7,7 @@ Day 1의 `solutions/`처럼 단계별 checkpoint를 제공합니다. Day 2는 �
 ```bash
 python -m day2_aicc.solutions.step01_baseline.app --scenario order_status
 python -m day2_aicc.solutions.final.eval_day2 --compare-models --scenario refund_old
+python -m day2_aicc.solutions.final.eval_day2 --include-unguarded --policies cheap --llm-mode mock
 ```
 
 ---

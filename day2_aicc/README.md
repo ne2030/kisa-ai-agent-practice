@@ -43,7 +43,7 @@ python -m day2_aicc.app --scenario indirect_policy --policy cheap --guards on
 # model policy별 품질/비용 비교
 python -m day2_aicc.eval_day2 --compare-models --scenario refund_old
 
-# guardrail 없는 위험 비교까지 포함
+# safety metrics: ASR/FPR/Utility/Latency/Coverage gap
 python -m day2_aicc.eval_day2 --include-unguarded --policies cheap --llm-mode mock
 ```
 
@@ -188,7 +188,7 @@ python -m day2_aicc.app --scenario compensation_delay --policy auto --budget str
 | 파일 | 용도 |
 |---|---|
 | `app.py` | 단일 scenario 실행 CLI |
-| `eval_day2.py` | golden set 평가 + model/cost 비교 |
+| `eval_day2.py` | golden set 평가 + safety metrics + model/cost 비교 |
 | `graph.py` | LangGraph node/edge 정의 |
 | `guardrails.py` | input/context/action guardrail 구현 |
 | `model_policy.py` | cheap/standard/strong 비용·품질 profile |
