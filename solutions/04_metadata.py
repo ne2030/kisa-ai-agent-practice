@@ -1,6 +1,6 @@
-"""Day 1 — agent.py 정답 (TODO 1, 2 완성).
+"""Step 4 answer — metadata까지 추가한 최종 예시.
 
-학생이 막혔을 때 비교용. 강의자가 적절한 시점에 공개.
+trace tree는 Step 3와 같고, Metadata/Tags로 본인 실행을 찾기 쉬워집니다.
 """
 
 import os
@@ -192,7 +192,7 @@ def execute_tool(tool_name: str, args: dict) -> str:
 @observe()  # ← TODO 2 정답
 def react_loop(user_input: str, max_steps: int = 10) -> str:
     get_client().update_current_span(
-        metadata={"tags": ["day1", "solution"]},
+        metadata={"user_id": "instructor", "tags": ["day1", "solution", "step4"]},
     )
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])

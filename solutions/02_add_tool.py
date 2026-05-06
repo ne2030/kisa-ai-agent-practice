@@ -1,6 +1,7 @@
-"""Day 1 — agent.py 정답 (TODO 1, 2 완성).
+"""Step 2 answer — 두 번째 tool(get_user_info) 추가.
 
-학생이 막혔을 때 비교용. 강의자가 적절한 시점에 공개.
+아직 react_loop parent @observe는 켜지지 않았습니다.
+그래서 Langfuse 목록에서는 llm.generate_content / tool.execute가 따로 보일 수 있습니다.
 """
 
 import os
@@ -116,7 +117,7 @@ HANDLERS = {
 
 
 # ============================================================
-# 2) ReAct loop  (TODO 2 정답: @observe 활성화)
+# 2) ReAct loop  (Step 3 전: parent @observe 아직 비활성화)
 # ============================================================
 
 
@@ -189,12 +190,8 @@ def execute_tool(tool_name: str, args: dict) -> str:
     return HANDLERS[tool_name](**args)
 
 
-@observe()  # ← TODO 2 정답
+# @observe()  # Step 3에서 활성화 — 아직 parent trace 없음
 def react_loop(user_input: str, max_steps: int = 10) -> str:
-    get_client().update_current_span(
-        metadata={"tags": ["day1", "solution"]},
-    )
-
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
     contents: list[types.Content] = [

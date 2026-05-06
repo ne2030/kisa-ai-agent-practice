@@ -227,7 +227,15 @@ python3 evaluate.py
 
 ## 막혔을 때
 
-`solutions/agent.py` — TODO 1, 2가 채워진 정답. 직접 시도 후 비교용으로만 보세요.
+`solutions/`에는 단계별 checkpoint가 있습니다. 직접 시도 후 막혔을 때만 비교용으로 보세요.
+
+- `solutions/01_baseline.py` — 시작 상태
+- `solutions/02_add_tool.py` — TODO 1 정답
+- `solutions/03_nested_trace.py` — TODO 1 + TODO 2 parent `@observe()` 정답
+- `solutions/04_metadata.py` — metadata 예시까지 포함
+- `solutions/agent.py` — 최종본
+
+자세한 진행 의도는 `solutions/README.md` 참고.
 
 ---
 
