@@ -6,6 +6,22 @@ Day 2 실습은 커맨드 실행만으로 끝나지 않아요. 각 실행 결과
 
 ---
 
+## 시각화 먼저 보기
+
+처음에는 구조도 한 장만 봐요. 핵심은 `specialist`만 LLM agent이고, `triage`는 router라는 점이에요.
+
+![Day 2 AICC structure](./diagrams/aicc_structure.svg)
+
+| 구분 | 해당 파일/node | 설명 |
+|---|---|---|
+| Graph wiring | `graph.py` | node 순서만 보여줘요. |
+| Router | `nodes/routing.py::triage_node` | intent/order_id/requested_address를 채우는 Python node예요. |
+| LLM agent | `nodes/specialist.py::specialist_node` | Gemini live 또는 mock이 답변 초안과 action 제안을 만들어요. |
+| Guard | `guardrails.py` | 모델 바깥에서 입력, RAG context, tool action을 막아요. |
+| Tool boundary | `nodes/context.py`, `nodes/actions.py`, `tools.py` | read/write tool을 분리해서 봐요. |
+
+---
+
 ## 먼저 보는 전체 그림
 
 ```text
@@ -15,7 +31,7 @@ Day 2 실습은 커맨드 실행만으로 끝나지 않아요. 각 실행 결과
   -> load_context
   -> retrieve_policy
   -> context_guard
-  -> specialist_live_llm
+  -> specialist
   -> action_guard
   -> execute_action
   -> final_review
@@ -31,7 +47,11 @@ Day 2 실습은 커맨드 실행만으로 끝나지 않아요. 각 실행 결과
 | `scenarios.py` | `SCENARIOS` | 실습 요청 문장과 공격 케이스 |
 | `mock_data.py` | `ORDERS`, `POLICY_DOCS` | 주문/배송/정책 mock 데이터 |
 | `tools.py` | `TOOL_REGISTRY` | 읽기 tool과 쓰기 tool 구분 |
-| `graph.py` | `build_graph`, `specialist_node` | node 순서, conditional edge, LLM 호출 위치 |
+| `graph.py` | `build_graph` | node 순서와 conditional edge |
+| `nodes/routing.py` | `triage_node` | intent router. agent 아님 |
+| `nodes/context.py` | `load_context_node`, `retrieve_policy_node` | read tool과 policy retrieval |
+| `nodes/specialist.py` | `specialist_node` | mock/live specialist 분기 |
+| `nodes/actions.py` | `execute_action_node`, `final_review_node` | write tool 실행과 최종 답변 |
 | `live_llm.py` | `live_specialist_node` | Gemini 호출과 JSON action proposal |
 | `guardrails.py` | `input_guard_node`, `sanitize_policy_docs`, `action_guard_node` | direct/context/action layer별 차단 |
 | `model_policy.py` | `route_model_for_intent`, `estimate_cost` | cheap/standard/strong routing과 비용 추정 |
@@ -79,7 +99,7 @@ python3 day2_aicc/app.py --scenario order_status --llm-mode mock
 sed -n '1,120p' day2_aicc/CODE_WALKTHROUGH.md
 sed -n '1,140p' day2_aicc/app.py
 sed -n '1,130p' day2_aicc/state.py
-sed -n '350,430p' day2_aicc/graph.py
+sed -n '1,120p' day2_aicc/graph.py
 ```
 
 볼 것:
@@ -112,14 +132,14 @@ python3 day2_aicc/app.py --scenario address_change_processing
 코드 위치:
 
 ```bash
-sed -n '80,160p' day2_aicc/graph.py
+sed -n '1,130p' day2_aicc/nodes/context.py
 sed -n '1,140p' day2_aicc/tools.py
 ```
 
 작업:
 
 - `tools.py`에서 읽기 tool과 쓰기 tool을 나눠 표시해 봐요.
-- `graph.py`의 `tool_trace`가 어떤 순서로 쌓이는지 확인해요.
+- `nodes/context.py`와 `nodes/actions.py`에서 `tool_trace`가 어떤 순서로 쌓이는지 확인해요.
 
 ---
 
@@ -146,7 +166,7 @@ python3 day2_aicc/app.py \
 
 ```bash
 sed -n '130,180p' day2_aicc/app.py
-sed -n '385,430p' day2_aicc/graph.py
+sed -n '80,120p' day2_aicc/graph.py
 ```
 
 작업:
@@ -176,7 +196,7 @@ python3 day2_aicc/app.py --scenario refund_old --policy cheap --guards off --llm
 코드 위치:
 
 ```bash
-sed -n '190,260p' day2_aicc/graph.py
+sed -n '1,190p' day2_aicc/nodes/specialist.py
 sed -n '120,175p' day2_aicc/guardrails.py
 ```
 

@@ -60,8 +60,8 @@ class AICCState(TypedDict, total=False):
     budget_mode: Literal["normal", "strict"]
     attack_mode: Literal["none", "direct", "indirect"]
 
-    # Parsed / loaded context: filled by graph.py::triage_node() and
-    # graph.py::load_context_node().
+    # Parsed / loaded context: filled by nodes/routing.py::triage_node() and
+    # nodes/context.py::load_context_node().
     intent: IntentName
     order_id: str
     requested_address: str

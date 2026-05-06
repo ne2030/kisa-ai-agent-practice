@@ -32,9 +32,17 @@ LangGraph에서 꼭 볼 개념은 네 가지예요.
 | 개념 | 이 실습에서 보는 위치 | 의미 |
 |---|---|---|
 | State | `state.py::AICCState` | node들이 공유하는 상담 상태 |
-| Node | `graph.py::*_node()` | 상태를 읽고 일부 필드만 업데이트하는 함수 |
+| Node | `nodes/*.py::*_node()` | 상태를 읽고 일부 필드만 업데이트하는 함수 |
 | Edge | `graph.py::build_graph()` | 다음 node로 넘어가는 순서 |
 | Checkpoint | `graph.py::open_compiled_graph()` | `thread_id` 기준으로 중간 상태 저장/재개 |
+
+### 노드가 전부 agent는 아니에요
+
+`triage`라는 이름 때문에 agent처럼 느껴질 수 있지만, 이 실습에서는 router에 가까워요. 문자열 기반으로 intent와 주문번호를 잡고 다음 node로 넘겨요. LLM agent 역할은 `specialist` 하나에만 있어요.
+
+![Day 2 AICC structure](./diagrams/aicc_structure.svg)
+
+Mermaid 원본: [`aicc_structure.mmd`](./diagrams/aicc_structure.mmd)
 
 node 함수는 보통 이런 모양이에요.
 
@@ -56,13 +64,13 @@ def triage_node(state: AICCState) -> dict[str, Any]:
 |---|---|---|
 | `thread_id` | `app.py::make_initial_state()` | checkpoint에서 상담 세션을 찾는 키 |
 | `scenario` | `scenarios.py::SCENARIOS` | 실습용 입력 fixture 이름 |
-| `intent/order` | `graph.py::triage_node()` | 요청 분류와 메시지에서 뽑은 주문번호 |
+| `intent/order` | `nodes/routing.py::triage_node()` | 요청 분류와 메시지에서 뽑은 주문번호 |
 | `model/guards` | `app.py::make_initial_state()`, `model_policy.py` | 사용할 모델 정책과 guardrail 설정 |
 | `blocked` | `guardrails.py::block()` | 어느 layer에서 멈췄는지 |
-| `actions` | `graph.py::execute_action_node()` | 실제로 실행된 쓰기 tool 목록 |
+| `actions` | `nodes/actions.py::execute_action_node()` | 실제로 실행된 쓰기 tool 목록 |
 | `cost estimate` | `model_policy.py::estimate_cost()` | prompt caching을 반영한 추정 비용 |
-| `answer` | `graph.py::final_review_node()` | 고객에게 보여줄 최종 문장 |
-| `risk events` | 각 node의 `_risk()` / `append_event()` | graph가 지나온 흔적 |
+| `answer` | `nodes/actions.py::final_review_node()` | 고객에게 보여줄 최종 문장 |
+| `risk events` | 각 node의 `append_risk_event()` / `append_event()` | graph가 지나온 흔적 |
 | `code path` | `app.py::code_path_lines()` | 다음에 열어볼 파일 순서 |
 
 `order_status`에서 `actions`가 `(none)`으로 나오는 이유:
@@ -97,7 +105,7 @@ sed -n '1,110p' day2_aicc/state.py
 ### 2. LangGraph wiring
 
 ```bash
-sed -n '350,430p' day2_aicc/graph.py
+sed -n '1,120p' day2_aicc/graph.py
 ```
 
 확인할 것:
@@ -110,22 +118,22 @@ sed -n '350,430p' day2_aicc/graph.py
 ### 3. 조회형 요청 흐름
 
 ```bash
-sed -n '75,155p' day2_aicc/graph.py
+sed -n '1,130p' day2_aicc/nodes/routing.py
+sed -n '1,130p' day2_aicc/nodes/context.py
 sed -n '1,90p' day2_aicc/tools.py
-sed -n '160,235p' day2_aicc/graph.py
 ```
 
 확인할 것:
 
-- `_parse_intent()`가 `order_status`를 고르는 조건
+- `parse_intent()`가 `order_status`를 고르는 조건
 - `load_context_node()`가 `get_order`, `get_customer`, `get_shipment`을 호출하는 순서
-- `mock_specialist_node()`나 `live_llm.py::live_specialist_node()`가 `answer_draft`와 `proposed_actions`를 만드는 위치
+- `nodes/specialist.py::mock_specialist_node()`나 `live_llm.py::live_specialist_node()`가 `answer_draft`와 `proposed_actions`를 만드는 위치
 
 ### 4. 쓰기 action 흐름
 
 ```bash
 python3 day2_aicc/app.py --scenario address_change_processing --llm-mode mock
-sed -n '190,260p' day2_aicc/graph.py
+sed -n '1,190p' day2_aicc/nodes/specialist.py
 sed -n '120,180p' day2_aicc/guardrails.py
 sed -n '90,150p' day2_aicc/tools.py
 ```
@@ -135,6 +143,12 @@ sed -n '90,150p' day2_aicc/tools.py
 - `specialist`가 `update_shipping_address`를 `proposed_actions`에 넣는 위치
 - `validate_action()`이 `processing` 상태인지 확인하는 위치
 - `execute_action_node()`가 `TOOL_REGISTRY`에서 실제 함수를 찾아 실행하는 위치
+
+---
+
+## Checkpoint / resume 흐름
+
+`thread_id`는 상담 세션 키처럼 쓰여요. `--interrupt-after retrieve_policy`로 멈추면 SQLite checkpoint에 마지막 state와 다음 node가 남고, `--resume`은 그 다음 node부터 이어서 실행해요. 그림은 위 구조도 하나만 보고, checkpoint는 명령어 출력의 `paused before ...`와 `resume command`만 확인해요.
 
 ---
 
@@ -165,7 +179,7 @@ sed -n '1,85p' day2_aicc/guardrails.py
 python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards off --llm-mode mock
 python3 day2_aicc/app.py --scenario indirect_policy --policy cheap --guards context,action --llm-mode mock
 sed -n '110,165p' day2_aicc/mock_data.py
-sed -n '130,165p' day2_aicc/graph.py
+sed -n '1,120p' day2_aicc/nodes/context.py
 sed -n '74,118p' day2_aicc/guardrails.py
 ```
 
@@ -208,7 +222,7 @@ sed -n '1,135p' day2_aicc/model_policy.py
 
 | 하고 싶은 수정 | 먼저 열 파일 | 같이 볼 파일 |
 |---|---|---|
-| intent 추가 | `graph.py::_parse_intent()` | `state.py::IntentName`, `eval_day2.py::EVAL_CASES` |
+| intent 추가 | `nodes/routing.py::parse_intent()` | `state.py::IntentName`, `eval_day2.py::EVAL_CASES` |
 | 배송지 변경 조건 강화 | `guardrails.py::validate_action()` | `mock_data.py::SHIPMENTS` |
 | 모델 라우팅 변경 | `model_policy.py::route_model_for_intent()` | `eval_day2.py` 리포트 |
 | direct injection 패턴 추가 | `guardrails.py::DIRECT_INJECTION_PATTERNS` | `scenarios.py` |
