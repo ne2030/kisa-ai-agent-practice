@@ -148,6 +148,7 @@ def generate_live(prompt: str, profile: ModelProfile, *, temperature: float = 0.
 
 
 def _mock_cost_text(profile: ModelProfile, prompt: str) -> str:
+    is_naive = "아래 내용을 요약해줘" in prompt
     is_concise = "3개 bullet" in prompt
     is_json = "JSON만 출력" in prompt
     is_refund = "반품 가능성 판단" in prompt or ("반품 가능 기간" in prompt and "러닝화" in prompt and "VIP" not in prompt)
@@ -155,6 +156,11 @@ def _mock_cost_text(profile: ModelProfile, prompt: str) -> str:
 
     if is_json:
         return '{"summary":["송장 API 지연으로 일부 주문 출고가 늦어졌어요","반품은 14일 이내 접수 가능하지만 훼손 여부 확인이 필요해요","VIP 배송 지연 보상은 최대 5,000원 쿠폰 검토 대상이에요"],"customer_impact":["선물 일정 지연","반품 처리 기대","보상 문의"],"cause_candidates":["물류센터 W-2 송장 생성 지연","오전 송장 API 지연"],"next_actions":["14:00 정상화 후 송장 생성 확인","반품 회수 후 훼손 여부 확인","VIP 등급과 실제 지연일 확인"],"unknowns":["상품 훼손 여부","일반 고객 보상 여부"]}'
+
+    if is_naive:
+        if profile.name == "strong":
+            return "송장 API 지연으로 주문 출고와 배송 문의가 늘었고, 반품과 배송 지연 보상 문의도 함께 들어왔어요. 물류센터 W-2와 14:00 정상화 예정, 반품 14일 조건, VIP 최대 5,000원 쿠폰 기준을 확인해 후속 안내가 필요해요."
+        return "배송 지연, 반품, 보상 쿠폰 문의가 함께 들어왔어요. 송장 API 지연이 주요 원인으로 보이고, 고객별로 배송 상황과 반품 가능 여부를 확인해 안내해야 해요."
 
     if is_refund:
         return "기간상 14일 이내라 반품 접수는 가능해 보여요. 다만 최종 승인은 회수 후 상품 훼손 여부를 확인해야 해요. 실외 착용 흔적이 있으면 거절될 수 있어요."

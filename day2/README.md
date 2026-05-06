@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ## Lab 1 · Cost 비교
 
-아래 순서대로 profile을 바꿔 실행하고, 실행마다 결과와 eval 리포트를 확인해요.
+모델을 바꾸기 전에 프롬프트 스타일을 먼저 비교해요. 같은 모델에서도 `naive`와 `structured`는 출력 형식, 기준어 누락, token 수가 다르게 나와요.
 
 ### 1) case 확인
 
@@ -34,31 +34,27 @@ Golden dataset은 여기 있어요.
 sed -n '1,180p' day2/cost_golden_set.yaml
 ```
 
-### 2) cheap 모델 실행
+### 2) naive prompt 실행
+
+```bash
+python3 day2/cost_lab.py --profile standard --prompt-style naive
+python3 day2/cost_eval.py --report day2/reports/cost_latest.json
+```
+
+### 3) structured prompt 실행
+
+```bash
+python3 day2/cost_lab.py --profile standard --prompt-style structured
+python3 day2/cost_eval.py --report day2/reports/cost_latest.json
+```
+
+### 4) profile 바꿔보기
 
 ```bash
 python3 day2/cost_lab.py --profile cheap --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
-```
 
-### 3) standard 모델로 바꿔서 실행
-
-```bash
-python3 day2/cost_lab.py --profile standard --prompt-style structured
-python3 day2/cost_eval.py --report day2/reports/cost_latest.json
-```
-
-### 4) strong 모델로 바꿔서 실행
-
-```bash
 python3 day2/cost_lab.py --profile strong --prompt-style structured
-python3 day2/cost_eval.py --report day2/reports/cost_latest.json
-```
-
-Live 호출도 같은 방식이에요.
-
-```bash
-python3 day2/cost_lab.py --profile standard --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
@@ -74,13 +70,23 @@ python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 | `est.cost` | token과 profile 가격표로 계산한 추정 비용 |
 | `finish` | `STOP`, `MAX_TOKENS` 같은 종료 이유 |
 
-### 5) prompt style 바꿔보기
+### 5) 반복 실행으로 응답 흔들림 보기
+
+```bash
+python3 day2/cost_repeat.py --profile standard --prompt-style naive --runs 2
+python3 day2/cost_repeat.py --profile standard --prompt-style structured --runs 2
+```
+
+볼 포인트:
+
+- `naive`는 짧고 편하지만 출력 구조와 기준어 포함 여부가 흔들릴 수 있어요.
+- `structured`는 input token이 늘지만 필요한 항목과 출력 형식을 더 잘 고정할 수 있어요.
+- 반복 실행 리포트에서 score range, visible output range, missing terms를 비교해요.
+
+### 6) 다른 prompt style도 확인
 
 ```bash
 python3 day2/cost_lab.py --profile standard --prompt-style concise
-python3 day2/cost_eval.py --report day2/reports/cost_latest.json
-
-python3 day2/cost_lab.py --profile standard --prompt-style detailed
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 
 python3 day2/cost_lab.py --profile standard --prompt-style json
@@ -90,7 +96,6 @@ python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 볼 포인트:
 
 - `concise`는 싸지만 누락이 생길 수 있어요.
-- `detailed`는 품질은 좋아질 수 있지만 output token이 늘어요.
 - `json`은 후처리가 쉬워지지만 구조 token이 추가돼요.
 
 수정해볼 곳:
@@ -174,9 +179,10 @@ python3 day2/security_lab.py --mode guarded
 | 시간 | 파트 | 할 일 |
 |---:|---|---|
 | 0–5분 | 구조 확인 | cost/security 두 실습과 실행 파일 확인 |
-| 5–15분 | Cost model | cheap → eval, standard → eval, strong → eval 순서로 직접 실행 |
-| 15–25분 | Cost prompt | `concise`, `detailed`, `json` 중 하나씩 바꿔 실행 |
-| 25–35분 | Cost projection | 월간 비용, caching, batch 비율 바꿔 보기 |
+| 5–15분 | Cost prompt | `naive`와 `structured` 실행 후 eval 비교 |
+| 15–23분 | Cost model | structured prompt로 cheap/standard/strong 비교 |
+| 23–30분 | Cost repeat | 같은 모델을 반복 실행해 score/token 흔들림 비교 |
+| 30–35분 | Cost projection | 월간 비용, caching, batch 비율 바꿔 보기 |
 | 35–50분 | Security lab | baseline 실패와 guarded 결과 비교 |
 | 50–57분 | Security 수정 실습 | PII/prompt injection 패턴 하나씩 추가하고 재실행 |
 | 57–60분 | 정리 | 어떤 모델을 어디에 쓰고, 어떤 guard를 둘지 정리 |
@@ -187,18 +193,19 @@ python3 day2/security_lab.py --mode guarded
 
 ```text
 day2/
-├── cost_lab.py              # Lab 1 실행. 모델/prompt/case 하나씩 실행
-├── cost_eval.py             # Golden dataset 기반 품질 평가
-├── cost_projection.py       # 월간 비용, prompt caching, batch 계산
-├── cost_golden_set.yaml     # Cost 평가용 golden dataset
-├── cost_dataset.py          # Golden dataset loader
-├── security_lab.py          # Lab 2 실행
-├── prompts.py               # prompt style과 security prompt
-├── model_catalog.py         # model id, token 가격표, caching/batch 가격
-├── llm_client.py            # Gemini/mock 호출, usage metadata 정리
+├── cost_lab.py              # 비용 실습 실행
+├── cost_eval.py             # 기준 데이터셋 기반 품질 평가
+├── cost_projection.py       # 월간 비용, 프롬프트 캐싱, 배치 계산
+├── cost_repeat.py           # 같은 조건 반복 실행 비교
+├── cost_golden_set.yaml     # 비용 평가용 기준 데이터셋
+├── cost_dataset.py          # 기준 데이터셋 로더
+├── security_lab.py          # 보안 실습 실행
+├── prompts.py               # 프롬프트 스타일과 보안 프롬프트
+├── model_catalog.py         # 모델 id, 토큰 가격표, 캐싱/배치 가격
+├── llm_client.py            # Gemini 호출과 usage metadata 정리
 ├── security_cases.py        # 보안 케이스 4개
-├── security_controls.py     # PII, injection, topic guard
-├── report_writer.py         # markdown/json 리포트 저장
+├── security_controls.py     # PII, 인젝션, 토픽 가드
+├── report_writer.py         # 리포트 저장
 ├── reports/                 # 실행 결과
-└── solutions/               # reference runner
+└── solutions/               # 참고 실행 파일
 ```

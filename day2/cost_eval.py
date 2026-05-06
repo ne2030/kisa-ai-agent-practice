@@ -54,13 +54,13 @@ def evaluate_row(row: dict[str, Any], *, simulate_regression: bool = False) -> d
 
     reasons: list[str] = []
     if missing_required:
-        reasons.append(f"missing required terms lowered score: {missing_required}")
+        reasons.append(f"빠진 기준어 때문에 점수 하락: {missing_required}")
     if found_forbidden:
-        reasons.append(f"forbidden terms found: {found_forbidden}")
+        reasons.append(f"금지어 발견: {found_forbidden}")
     if row.get("warnings"):
-        reasons.append(f"generation warnings: {row['warnings']}")
+        reasons.append(f"생성 경고: {row['warnings']}")
     if not reasons:
-        reasons.append("golden terms and forbidden checks passed")
+        reasons.append("기준어와 금지어 확인 통과")
 
     return {
         "case_id": row["case_id"],
@@ -124,16 +124,16 @@ def render_markdown(results: list[dict[str, Any]], *, report_path: str, mode: st
             "",
             f"## {result['case_id']} · {result['profile']} · {result['prompt_style']}",
             "",
-            f"Required found: `{result['found_required']}`",
-            f"Required missing: `{result['missing_required']}`",
-            f"Forbidden found: `{result['found_forbidden']}`",
+            f"찾은 기준어: `{result['found_required']}`",
+            f"빠진 기준어: `{result['missing_required']}`",
+            f"발견된 금지어: `{result['found_forbidden']}`",
             "",
-            "Rubric:",
+            "평가 기준:",
             "```json",
             json.dumps(result.get("rubric"), ensure_ascii=False, indent=2),
             "```",
             "",
-            "Output preview:",
+            "출력 미리보기:",
             "```text",
             result["output_preview"],
             "```",
