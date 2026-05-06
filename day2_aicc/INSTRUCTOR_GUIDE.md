@@ -42,7 +42,8 @@ Day 1에서는 `agent.py` 하나 안에서 ReAct loop가 어떻게 도는지 봤
 ## 준비
 
 ```bash
-cd kisa-ai-agent-practice
+git stash
+git pull
 pip install -r requirements.txt
 ```
 
