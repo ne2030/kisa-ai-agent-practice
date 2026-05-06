@@ -1,6 +1,6 @@
 # Day 2 실습 — Cost 비교와 Security Guardrail
 
-Day 2는 두 개 실습만 해요.
+Day 2는 cost evaluation 실습과 security guardrail 실습으로 이어져요.
 
 1. **Cost lab**: 모델, prompt, token, latency, 비용을 하나씩 바꿔가며 비교해요. Golden dataset으로 품질 평가도 같이 봐요.
 2. **Security lab**: PII, hallucination, topic drift, prompt injection 문제가 생기는 baseline을 먼저 보고, guard를 켰을 때 결과가 어떻게 바뀌는지 확인해요.
@@ -146,7 +146,7 @@ python3 day2/cost_projection.py --report day2/reports/cost_latest.json --cache-h
 python3 day2/security_lab.py --mode both
 ```
 
-Guarded 결과만 확인:
+Guarded 결과 확인:
 
 ```bash
 python3 day2/security_lab.py --mode guarded

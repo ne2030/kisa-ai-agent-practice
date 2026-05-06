@@ -7,7 +7,7 @@
 | Day 1 | `day1/` | 단일 ReAct Agent, tool loop, Langfuse trace, golden set 평가 | `cd day1 && python3 check_env.py` |
 | Day 2 | `day2/` | 모델 비용·eval·projection, security guardrail | `python3 day2/cost_lab.py --profile cheap` |
 
-기존 Day 1 자료는 `day1/`에 있어요. Day 2는 cost와 security 두 실습만 다뤄요.
+기존 Day 1 자료는 `day1/`에 있어요. Day 2는 cost evaluation과 security guardrail 흐름으로 구성돼요.
 
 ---
 
