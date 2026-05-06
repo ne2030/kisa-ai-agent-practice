@@ -77,6 +77,32 @@ input_guard
 
 ---
 
+## 코드 구조 먼저 보기
+
+Day 2는 명령어 실행보다 코드 구조를 읽는 시간이 더 중요합니다. 요청 하나가 어떤 파일을 지나는지 먼저 확인합니다.
+
+| 파일 | 역할 | 읽을 위치 |
+|---|---|---|
+| `app.py` | CLI 옵션을 읽고 초기 `AICCState` 생성 | `make_initial_state`, `main` |
+| `state.py` | graph node가 공유하는 state schema | `AICCState` |
+| `graph.py` | LangGraph node/edge 정의 | `build_graph`, `specialist_node` |
+| `live_llm.py` | Gemini 호출과 JSON action proposal | `live_specialist_node` |
+| `guardrails.py` | input/context/action guardrail | `input_guard_node`, `sanitize_policy_docs`, `action_guard_node` |
+| `tools.py` | 주문 조회/배송지 변경/환불/쿠폰 mock tool | `TOOL_REGISTRY` |
+| `model_policy.py` | model routing, prompt caching/batch 비용 추정 | `route_model_for_intent`, `estimate_cost` |
+| `eval_day2.py` | golden case와 safety metrics | `EVAL_CASES`, `summarize_safety_metrics` |
+
+추천 확인 명령:
+
+```bash
+sed -n '1,140p' day2_aicc/app.py
+sed -n '1,130p' day2_aicc/state.py
+sed -n '350,430p' day2_aicc/graph.py
+sed -n '1,120p' day2_aicc/guardrails.py
+```
+
+---
+
 ## Checkpoint 실습
 
 중간 node 뒤에서 멈춘 뒤 같은 `thread_id`로 재개합니다.
@@ -104,13 +130,13 @@ python -m day2_aicc.app \
 
 | 시간 | 파트 | 실습 내용 |
 |---:|---|---|
-| 0–5분 | Orientation | Day 1 ReAct loop와 Day 2 graph 차이 확인 |
-| 5–12분 | Baseline run | 주문 조회 / 배송 상태 / 배송지 변경 정상 케이스 실행 |
-| 12–20분 | Checkpoint | `--interrupt-after`, `--resume`, thread_id 확인 |
-| 20–32분 | Tool boundary | 배송지 변경·환불·보상 action guard 수정 |
-| 32–44분 | Guardrail attack | direct / indirect injection 성공·차단 비교 |
-| 44–54분 | Cost lab | cheap / standard / strong 결과, cost, batch estimate 비교 |
-| 54–60분 | Mini challenge | 새 scenario + eval case 추가, 리포트 공유 |
+| 0–8분 | Code map | `app.py` → `state.py` → `graph.py` 흐름 확인 |
+| 8–15분 | Baseline trace | 조회 요청과 쓰기 action 요청의 trace 차이 비교 |
+| 15–23분 | Checkpoint | state 저장/재개, `--show-state`로 저장 내용 확인 |
+| 23–34분 | Tool boundary | 배송지 변경·환불 guard 조건 수정 |
+| 34–45분 | Guardrail attack | direct / indirect injection payload와 layer별 차단 비교 |
+| 45–55분 | Safety metrics / cost | ASR/FPR/Utility/Latency/Coverage gap + model cost 확인 |
+| 55–60분 | Mini challenge | 새 scenario + eval case 추가, 리포트 공유 |
 
 ---
 
