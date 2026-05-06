@@ -10,6 +10,7 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 - **trace** — Langfuse `@langfuse.observe` 데코레이터로 자동 trace 기록
 - **failures/** — 의도적으로 망가진 시나리오 4종, trace로 진단 연습
 - **evaluate.py** — `golden_set.yaml`의 5개 hard sample을 자동 평가
+- **INSTRUCTOR_GUIDE.md** — 강의자가 보면서 진행할 단계별 스크립트
 
 ---
 
