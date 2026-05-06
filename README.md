@@ -1,6 +1,6 @@
 # Day 1 실습 — 단일 에이전트 만들고 검증하기
 
-KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동작시키고, observability를 붙이고, 실패 케이스를 진단하고, golden dataset으로 평가하는 한 사이클을 완수합니다.
+KISA AI Agent 강의 Day 1 핸즈온. ReAct 에이전트를 동작시키고, observability를 붙이고, 실패 케이스를 진단하고, golden dataset으로 평가하는 한 사이클을 실습합니다.
 
 ---
 
@@ -10,7 +10,7 @@ KISA AI Agent 강의 Day 1 핸즈온. **90분** 안에 ReAct 에이전트를 동
 - **trace** — Langfuse `@langfuse.observe` 데코레이터로 자동 trace 기록
 - **failures/** — 의도적으로 망가진 시나리오 4종, trace로 진단 연습
 - **evaluate.py** — `golden_set.yaml`의 5개 hard sample을 자동 평가
-- **INSTRUCTOR_GUIDE.md** — 강의자가 보면서 진행할 단계별 스크립트
+- **INSTRUCTOR_GUIDE.md** — 단계별 실습 진행 가이드
 
 ---
 
@@ -61,14 +61,14 @@ cp .env.example .env
 
 | 키 | 어디서 |
 |-----|--------|
-| `GEMINI_API_KEY` | 강의자가 화면에 띄운 값을 복사 |
+| `GEMINI_API_KEY` | 제공받은 값을 복사 |
 | `LANGFUSE_PUBLIC_KEY` | [cloud.langfuse.com](https://cloud.langfuse.com) 가입 → 프로젝트 생성 → Settings → API Keys |
 | `LANGFUSE_SECRET_KEY` | 위와 동일 위치 |
 | `LANGFUSE_HOST` | 기본값 `https://cloud.langfuse.com` 그대로 |
 
 ---
 
-## Step 1 · 셋업 + Walkthrough (30분)
+## Step 1 · 셋업 + Walkthrough
 
 ### 1-1. 환경 검증
 
@@ -78,7 +78,7 @@ python3 check_env.py
 
 `✅ Gemini OK` + `✅ Langfuse OK` 두 줄 나오면 통과. 실패하면 `.env` 값을 다시 확인.
 
-### 1-2. 코드 walkthrough (강의자 주도)
+### 1-2. 코드 walkthrough
 
 `agent.py`를 같이 읽으며 다음을 확인:
 
@@ -99,7 +99,7 @@ Langfuse의 nested trace 확인은 Step 3에서 parent `@langfuse.observe()`를 
 
 ---
 
-## Step 2 · 두 번째 Tool 추가 (10~15분)
+## Step 2 · 두 번째 Tool 추가
 
 `agent.py`의 **TODO 1** 자리에 `get_user_info(user_id: str)` mock tool을 추가합니다.
 
@@ -121,7 +121,7 @@ Step 3 이후에는 같은 흐름을 Langfuse trace에서도 확인.
 
 ---
 
-## Step 3 · Langfuse @langfuse.observe 데코레이터 (10~15분)
+## Step 3 · Langfuse @langfuse.observe 데코레이터
 
 `agent.py`의 **TODO 2** 위치에 `@langfuse.observe()` 데코레이터를 활성화합니다.
 `llm.generate_content`와 `tool.execute` helper는 이미 span으로 계측되어 있으므로,
@@ -149,11 +149,11 @@ langfuse.get_client().update_current_span(
     },
 )
 ```
-이렇게 현재 span에 본인 식별자를 붙이면 다른 학생들과 구분됨.
+이렇게 현재 span에 본인 식별자를 붙이면 여러 실행 결과 중 본인 trace를 찾기 쉬워집니다.
 
 ---
 
-## Step 4 · 의도적 실패 진단 (10~15분)
+## Step 4 · 의도적 실패 진단
 
 4개 시나리오를 차례로 돌려서 각자 trace로 진단합니다.
 
@@ -176,7 +176,7 @@ python3 failures/lazy_response_demo.py     # 나쁜 system prompt → "분석하
 
 ---
 
-## Step 5 · Golden Dataset 평가 (10~15분)
+## Step 5 · Golden Dataset 평가
 
 5개의 hard sample을 자동 평가합니다.
 
