@@ -57,7 +57,7 @@ sed -n '1,160p' day2/README.md
 
 ## 5–15분 · Naive prompt와 structured prompt 비교
 
-먼저 cost 실습에서 쓰는 입력과 프롬프트를 읽고 시작해요. 이 구간은 모델을 바꾸기 전에, **같은 모델도 프롬프트가 달라지면 품질·token·latency·비용이 같이 바뀐다**는 걸 보는 구간이에요.
+먼저 cost 실습에서 쓰는 입력과 프롬프트를 읽고 시작해요. 이 구간은 모델 차이를 섞지 않고 prompt 차이부터 보려고 `standard` profile로 고정해요. 그 다음 구간에서 `cheap`, `strong`으로 바꿔 보면서 모델 비용 차이를 봐요.
 
 ### 입력 데이터가 뭔지
 
