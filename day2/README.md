@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ## Lab 1 · Cost 비교
 
-기본 case는 최신 배송 상태를 기준으로 배송지 변경 가능 여부를 판단하는 `latest-status-wins`예요. 같은 모델에서도 `naive`와 `structured`는 상태값 보존, 기준어 누락, token 수가 다르게 나와요.
+기본 case는 최신 배송 상태를 기준으로 배송지 변경 가능 여부를 판단하는 `latest-status-wins`예요. 먼저 `cheap`으로도 결론을 잡을 수 있는지 보고, eval에서 상태값 보존, 기준어 누락, token 수를 같이 확인해요.
 
 ### 1) case 확인
 
@@ -37,21 +37,21 @@ sed -n '1,180p' day2/cost_golden_set.yaml
 ### 2) naive prompt 실행
 
 ```bash
-python3 day2/cost_lab.py --case latest-status-wins --profile standard --prompt-style naive
+python3 day2/cost_lab.py --case latest-status-wins --profile cheap --prompt-style naive
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
 ### 3) structured prompt 실행
 
 ```bash
-python3 day2/cost_lab.py --case latest-status-wins --profile standard --prompt-style structured
+python3 day2/cost_lab.py --case latest-status-wins --profile cheap --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ```
 
 ### 4) profile 바꿔보기
 
 ```bash
-python3 day2/cost_lab.py --case latest-status-wins --profile cheap --prompt-style structured
+python3 day2/cost_lab.py --case latest-status-wins --profile standard --prompt-style structured
 python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 
 python3 day2/cost_lab.py --case latest-status-wins --profile strong --prompt-style structured
@@ -73,13 +73,13 @@ python3 day2/cost_eval.py --report day2/reports/cost_latest.json
 ### 5) 반복 실행으로 응답 흔들림 보기
 
 ```bash
-python3 day2/cost_repeat.py --case latest-status-wins --profile standard --prompt-style naive --runs 2
-python3 day2/cost_repeat.py --case latest-status-wins --profile standard --prompt-style structured --runs 2
+python3 day2/cost_repeat.py --case latest-status-wins --profile cheap --prompt-style naive --runs 2
+python3 day2/cost_repeat.py --case latest-status-wins --profile cheap --prompt-style structured --runs 2
 ```
 
 볼 포인트:
 
-- `naive`는 짧고 편하지만 최신 상태값과 확인 항목이 흔들릴 수 있어요.
+- `cheap + naive`도 결론을 맞힐 수 있어요. 그래도 최신 상태값과 확인 항목은 흔들릴 수 있어요.
 - `structured`는 input token이 늘지만 필요한 항목과 출력 형식을 더 잘 고정할 수 있어요.
 - 반복 실행 리포트에서 score range, visible output range, missing terms를 비교해요.
 
