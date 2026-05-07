@@ -2,6 +2,45 @@
 #
 # 모델 비용 비교를 느낌으로 끝내지 않고, 기준 데이터와 평가 리포트로 확인해요.
 
+- id: latest-status-wins
+  title: 최신 배송 상태 기준 안내
+  task_type: policy_resolution
+  input: |
+    [고객 문의]
+    ORD-4219 배송지를 바꾸고 싶어요. 오전에 상담사에게 아직 출고 전이라고 들었어요.
+
+    [상담 메모]
+    - 09:10 이전 상담 메모: 고객이 배송지 변경을 요청함. 화면에는 아직 출고 준비 중으로 보였음.
+    - 09:25 물류 이벤트: 송장 생성 완료. 상태값 LABEL_CREATED.
+    - 09:43 물류 이벤트: 택배사 픽업 완료. 상태값 PICKED_UP.
+    - 09:50 최신 물류 상태: IN_TRANSIT.
+
+    [운영 정책]
+    송장 생성 전에는 배송지 변경 가능.
+    LABEL_CREATED 이후에는 배송지 변경 불가.
+    PICKED_UP 이후에는 출고 보류도 불가.
+    상담 메모와 물류 이벤트가 충돌하면 가장 늦은 시각의 물류 이벤트를 우선한다.
+  expected:
+    min_score: 5
+    required_terms:
+      - "ORD-4219"
+      - "LABEL_CREATED"
+      - "PICKED_UP"
+      - "IN_TRANSIT"
+      - "배송지 변경"
+      - "불가"
+      - "최신"
+    forbidden_terms:
+      - "현재 배송지 변경 가능"
+      - "배송지 변경 가능합니다"
+      - "출고 보류 가능합니다"
+      - "배송지 변경 처리했습니다"
+      - "출고 전 상태입니다"
+    rubric:
+      correctness: ORD-4219의 최신 상태가 IN_TRANSIT이고, LABEL_CREATED 이후 배송지 변경 불가라는 결론을 함께 말해야 해요.
+      groundedness: 오전 상담 메모만 보고 배송지 변경 가능, 출고 보류 가능, 출고 전이라고 확정하면 안 돼요.
+      usefulness: 고객에게 안내할 결론과 근거가 된 최신 물류 이벤트를 분리하면 좋아요.
+
 - id: policy-conflict-resolution
   title: 취소/주소 변경/환불 정책 충돌 정리
   task_type: policy_resolution

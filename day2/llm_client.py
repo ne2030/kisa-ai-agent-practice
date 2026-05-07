@@ -151,8 +151,21 @@ def _mock_cost_text(profile: ModelProfile, prompt: str) -> str:
     is_naive = "아래 내용을 요약해줘" in prompt
     is_concise = "3개 bullet" in prompt
     is_json = "JSON만 출력" in prompt
+    is_latest_status = "latest-status-wins" in prompt or "ORD-4219" in prompt
     is_refund = "반품 가능성 판단" in prompt or ("반품 가능 기간" in prompt and "러닝화" in prompt and "VIP" not in prompt)
     is_vip = "배송 지연 보상" in prompt and "VIP" in prompt and "러닝화" not in prompt
+
+    if is_latest_status:
+        if is_naive:
+            return "ORD-4219은 송장 생성 이후라 배송지 변경이 불가해요. 고객에게 현재 배송 단계라 변경이 어렵다고 안내해야 해요."
+        return """1. 핵심 요약 3줄
+- ORD-4219는 최신 물류 상태가 IN_TRANSIT이에요.
+- 09:25 LABEL_CREATED 이후 배송지 변경은 불가해요.
+- 09:43 PICKED_UP 이후라 출고 보류도 어렵게 봐야 해요.
+2. 고객 영향: 고객이 요청한 배송지 변경 처리가 어려워요.
+3. 원인 후보: 09:10 상담 메모와 이후 물류 이벤트 사이에 시간 차이가 있었어요.
+4. 바로 할 다음 조치: 최신 상태 기준으로 배송지 변경 불가를 안내해요.
+5. 확실하지 않은 내용: 고객이 상담사에게 출고 전이라고 들은 정확한 시각은 확인이 필요해요."""
 
     if is_json:
         return '{"summary":["송장 API 지연으로 일부 주문 출고가 늦어졌어요","반품은 14일 이내 접수 가능하지만 훼손 여부 확인이 필요해요","VIP 배송 지연 보상은 최대 5,000원 쿠폰 검토 대상이에요"],"customer_impact":["선물 일정 지연","반품 처리 기대","보상 문의"],"cause_candidates":["물류센터 W-2 송장 생성 지연","오전 송장 API 지연"],"next_actions":["14:00 정상화 후 송장 생성 확인","반품 회수 후 훼손 여부 확인","VIP 등급과 실제 지연일 확인"],"unknowns":["상품 훼손 여부","일반 고객 보상 여부"]}'
